@@ -91,7 +91,38 @@ eq-prop (_in-ctx) form =  ((a eq b) in-ctx ) ->> exchange a with b in form --som
 
 -- TODO: universal rules
 --this is not andorra yet. This is just backtrack proving stuff...just a little smarter maybe. The idea of andorra is that facts are just being deduced. Like code completion. Maybe it is when having several goals? All incomplete code becomes a goal? All time information becomes a goal? When having several goals, try all of them and the first one wins? There should maybe be goal reduction rules for when too much happens at the same time...Or finding out the next goal then is the new single goal.
---That's it! When having a disjunction, the new goal is to dissolve the disjunction! Now, fewer rules hold and the disjunction ID does not give new facts. 
+--That's it! When having a disjunction, the new goal is to dissolve the disjunction! Now, fewer rules hold and the disjunction ID does not give new facts.
+
+
+--this is also not andorra yet because this just does depth first search again. In fact, everz query should give a new context. When a goal is queried, it could be unknown whether it is in. Querying another goal could give that knowledge though.
+
+--technically, there could also be a function mapping a term to its proof obligations, but when descending them down always carrying a context of things with it. open goals are queued until all other goals are done with it.
+
+--for free variables...maybe disjunct the possibilities? Or just ask whether something holds universally? Nope...universality does not imply existance. What if some P -> (A -> C) and (C -> B) holds...then only P needs to be proven. So under some contexts, variables hold universaly.
+prove ctx (A and B) = add A >>= add B >>= prove A >>= prove B
+prove ctx (A impl B) = prove (A impl C) >>= prove (C impl B)
+prove ctx (A or B) = stop
+prove ctx form = if form in ctx then goals remove form else nothing
+
+--goal oriented reasoning just puts the goals also into the context and reasons them until disjunction. A disjunction stays a passive goal that can only be resolved by other facts
+
+prove ctx form = form in ctx || prove' (ctx + form) form
+
+prove ctx [] = bot in ctx
+prove ctx goals = prove new-ctx new-goals --Get rid of goals in ctx. get new goals of each goal. Add them to ctx. Make them be new goals.
+  where act-goals = goals \\ ctx
+        new-goals = map (step ctx) act-goals
+        new-ctx =  ctx ++ new-goals
+
+-- problem: the possible premises can only be derived when all implications are known. If there are implications missing it doesn't work. Should be captured by disjunction elimination...
+--main problem with just implementing it straight forward is the existential quantification. is it though? It resolves deterministaicallz...
+
+--goals just as a fact (goal t). If that fact is up and unproven, only things that prove the fact can be deduced.
+--(exists x a b c d. x=(a b), b=(c d), c=eq) -> a = d
+
+
+--bruteforce. Take two facts and combine them to something new. Only combine them when outcome is interesting. More general...only combine them when there is reason to.
+
 
 {-
 general idea: deterministic machine running on a set of facts. This set is interconnected, machine runs on connections. Relevant facts always reach machine eventually.
