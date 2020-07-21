@@ -2,15 +2,6 @@ module AtomicApproach where
 
 data Term p = VAR p | APPL p p
 
-eq (EQ a b) (EQ b (c,d)) = --check if in kb
-eq (EQ a b) (EQ a (c,d)) = --check if in kb
-eq (EQ a b) (EQ a (c,d)) (EQ b (c',d')) = ()
-eq (EQ a b) = --check if in kb, or (EQ a c) (EQ c b)
-
-impl (VAR p) (IMPL a b) (EQ p a) = (VAR p)
-
-...
-
 data SolveState a = {vars::[a],
                       eqs::[(Term p,Term p)],
                       impls::[(Term p,Term p)]}
@@ -126,6 +117,20 @@ dedc_conjunction3 b = [AND a b] --TODO: existential
 
 
 --quantifiers--------------------------------
+--in general, variables should just be existential, so that when equality comes up as an atom, pointer operations can be made. Universal variables are dealt like usual variables, only that they cannot be assigned. This means that, as long as no information is available or needed on a variable, it holds universally TODO its the thing with variables bound in the premises. if the variable is just htere but not used, the whole thing holds universally.
+--so essentially, bound variables anywhere are existential, while as soon as they are unbound, they become universal...and vice versa.
+--
+--t[x], x=(a,b) -> exists x t[x]
+impl_exists :: (Eq a) => (Term a,Term a) -> [Term a]
+
+--exists x t ->
+
+--actually...exists should be equivalent to there just being a variable.
+--forall should be equivalent to the variable not being assigned. what?
+--in an existential statement, for exists x, one needs to find a proof for some x=y, where exists y holds.
+--in a forall statement, forall x, it needs to hold in a context for which no x=y, for which not forall y holds, holds. Problem: how to know if no such proof comes up?
+
+
 
 -- exists x t -> t[x/y] where y is a fresh variable bound to the quantifier
 
