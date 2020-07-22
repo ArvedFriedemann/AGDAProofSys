@@ -1,13 +1,15 @@
-module AtomicApproach where
+module AtomicApproach2 where
 
 import Data.Either
 
 data Term p = VAR p | APPL p p deriving (Eq, Show)
-data RichTerm p = BOT | TRM (Term p)
-                  | EQ    p p
-                  | AND   (Term p) (Term p)
-                  | OR    (Term p) (Term p)
-                  | IMPL  (Term p) (Term p)
+data RecTerm p = RVAR p | RAPPL (RecTerm p) (RecTerm p) deriving (Eq, Show)
+data SemTerm p = SVAR p | SAPPL p p | SEQ p p | SEMEQ p (p,p) deriving (Eq, Show)
+data RichTerm p = BOT | TRM (RecTerm p)
+                  | EQT    (RichTerm p) (RichTerm p)
+                  | AND   (RichTerm p) (RichTerm p)
+                  | OR    (RichTerm p) (RichTerm p)
+                  | IMPL  (RichTerm p) (RichTerm p)
                   | EXISTS (p -> RichTerm p)
 
 type P a p = (p, a)
@@ -19,23 +21,23 @@ bin_match op (APPL a (APPL op' b))
 
 --a=a
 impl_eq1 :: (Eq p) => p -> [RichTerm p]
-impl_eq1 a = [EQ a a]
+impl_eq1 a = [EQT a a]
 dedc_eq1 :: (Eq p) => p -> p -> [RichTerm p]
 dedc_eq1 a b
   | a==b = []
-  | otherwise = [EQ a b]
+  | otherwise = [EQT a b]
 
 --a=b -> b=a
 impl_eq2 :: (Eq p) => p -> p -> [RichTerm p]
-impl_eq2 a b = [EQ b a]
+impl_eq2 a b = [EQT b a]
 dedc_eq2 :: (Eq p) => p -> p -> [RichTerm p]
-dedc_eq2 a b = [EQ b a]
+dedc_eq2 a b = [EQT b a]
 
 --a=b b=c -> a=c           --problematic...only works with pointer equality.
 impl_eq3 :: (Eq p) => p -> p -> p -> p -> [RichTerm p]
 impl_eq3 a b b' c
-  | b==b' = [EQ a c]
+  | b==b' = [EQT a c]
   | otherwise = []
 
 dedc_eq3 :: (Eq p) => p -> p -> [RichTerm p]
-dedc_eq3 a c = [EXISTS (\b -> AND (EQ a b) (EQ b c))]
+dedc_eq3 a c = [EXISTS (\b -> AND (EQT a b) (EQT b c))]
