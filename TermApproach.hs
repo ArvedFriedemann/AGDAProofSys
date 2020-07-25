@@ -59,6 +59,11 @@ exchangeVar x y (BIND tp p t)
     | otherwise = BIND tp p (exchangeVar x y t)
 
 
+--TODO! BIIIIIIIIIIG!
+--forall x. x=x
+impl_eq0 :: VarState p [Term p]
+impl_eq0 = do{x <- getVar; return [BIND FORALL x (BOP (VAR x) EQT (VAR x))]}
+
 --These two are almost identical!
 --implications and proof obligations for a=b
 impl_eq1 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
@@ -276,6 +281,8 @@ defV = map ("x"++) $ show <$> [1..]
 --TODO! existential needs more that just some variable put somewhere. There already needs to be another term! Maybe that should be considered...should pop up when doing the implications reasoning. In that case, the existential one emerges directly from the kb.
 goalOriented :: [Term String] -> Term String -> [String] -> IO ()
 goalOriented kb goal vars = do {
+    putStrLn "Goal:";
+    putStrLn $ ts goal;
     putStrLn "Knowledge Base:";
     putStrLn $ unlines $ ts <$> kb;
 
