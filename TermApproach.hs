@@ -190,6 +190,41 @@ dedc_impl3 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
 dedc_impl3 (b,a) = return [a]
 
 
+--Exchange as rules
+
+--this only assigns when the resulting term t has to be assigned to one of them. So it also has to hold that
+--term t <-> t=(CONST c) v t=(VAR x) v t=(a op b) v t=(BIND tp p t)
+--t [x | y] to t' -> term t, term t', term x, term y
+
+-- (CONST c) [ x | y ] to (CONST c)
+-- (VAR x) [ x | y ] to t <-> t=y
+-- (a op b) [ x | y ] to t <-> t=(a' op b'), a [ x | y ] to a', b [ x | y ] to b'
+-- (BIND tp x t) [x | y] to (BIND tp x t)
+-- (BIND tp p t) [x | y] to t', (p=x -> bot) <-> t [x | y] to t'
+
+--what if one creates the inplications for the matching? Something in the middle?
+--So, if there is a fact like forall x. x=x, and we want to prove a=a. then we'd have to prove that is is possible for (x=x)[x\k]=(a=a). The stress is on "possible". So we'd have to prove that (x=x)[x\k]=(a=a) -> top. I guess. in the end, we get that it is possible under the assumption that k=a. how can it be enforced? Actually, only via a disjunction. These premises only become facts when there is no other alternative. Unless there is some exists proof...actually, it should be stated that exists k.(x=x)[x|k]=(a=a). in that case, there could be an actual k, which can be found by forward reasoning. this would work well for hand computation, it is kinda hard for automated deduction. Reason is that the existential variables need to be assigned without being sure that the assignment is neither right nor unique. Quite in fact, in most instances, it is not unique. What can be done though is to prove the possibility of matching by stating that the premises hint towards existance.
+--or at least all possible deductions don't prevent it. In that instance it must be provable that bot is not provable. 
+
+--QUANTIFIERS!
+
+--forall x. t -> t[x/y]
+
+--t[x] -> forall x. t[x]    iff x is not used anywhere (is this a strong notion?)
+
+
+--exists is weird...their seems to be a special exists tolen needed to tell whether some arbirarty variable exists or not.
+--t[x], exists x -> exists x. t[x]
+--x=(a,b), exists a, exists b -> exists x
+-- exists x. t[x] -> exists x         needs to be the x created when eliminating the existential
+
+
+
+
+
+
+
+
 
 
 match_op :: BinOp -> Term p -> [(Term p, Term p)]
