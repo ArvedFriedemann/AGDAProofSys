@@ -112,9 +112,9 @@ implications kb = do {
   return $ concat $ p1 ++ p2
 }
 
-premises :: (Eq p) => [Term p] -> Term p-> VarState p [Term p]
-premises kb goal = do {
-  eqs <- return $ concatMap from_equivalence kb;
+premises :: (Eq p) => Term p-> VarState p [Term p]
+premises goal = do {
+  eqs <- return $ from_equivalence goal;
   p <- sequence $ [dedc_eq1, dedc_eq2, dedc_eq3] <*> eqs;
   return $ conj_list1 <$> p
 }
@@ -133,19 +133,28 @@ ppterm (CONST TOP) = tell "T"
 ppterm (CONST BOT) = tell "()"
 ppterm (VAR v) = tell v
 ppterm (BOP t1@(BOP tt1 op' tt2) op t2)
-    | (oplevel op') > (oplevel op) = tell "(" >> (ppterm t1) >> tell ") " >> (ppterm t2)
-    | otherwise = (ppterm t1) >> (ppterm t2)
-ppterm (BOP t1@(BIND tp p t) op t2) = tell "(" >> (ppterm t1) >> tell ") " >> (ppterm t2)
-ppterm (BOP t1 op t2) = (ppterm t1) >> (ppterm t2)
+    | (oplevel op') < (oplevel op) = tell "(" >> (ppterm t1) >> tell ")" >> ppOp op >> (ppterm t2)
+    | otherwise = (ppterm t1) >> ppOp op  >> (ppterm t2)
+ppterm (BOP t1@(BIND tp p t) op t2) = tell "(" >> (ppterm t1) >> tell ")" >> ppOp op  >> (ppterm t2)
+ppterm (BOP t1 op t2) = (ppterm t1) >> ppOp op  >> (ppterm t2)
 ppterm (BIND FORALL p t) = tell ("forall "++p++".") >> (ppterm t)
 ppterm (BIND EXISTS p t) = tell ("exists "++p++".") >> (ppterm t)
+
+ppOp :: BinOp -> Writer String ()
+ppOp OR = tell "v"
+ppOp AND = tell "^"
+ppOp IMPL = tell "->"
+ppOp EQT = tell "="
+ppOp APPL = tell " "
+
+defV = map ("x"++) $ show <$> [1..]
 
 goalOriented :: [Term String] -> Term String -> [String] -> IO ()
 goalOriented kb goal vars = do {
     putStrLn "Knowledge Base:";
     putStrLn $ unlines $ ts <$> kb;
     putStrLn "Paths:";
-    (newPrems,vars') <- return $ runState (premises kb goal) vars;
+    (newPrems,vars') <- return $ runState (premises goal) vars;
     putStrLn $ unlines $ ts <$> newPrems
 }
 
