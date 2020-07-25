@@ -227,7 +227,7 @@ premises goal = do {
 
   ors <- return $ match_op OR goal;
   d1 <- sequence $ [dedc_disj1, dedc_disj2] <*> ors;
-  d2 <- sequence $ [dedc_conj3] <*> [goal];
+  d2 <- sequence $ [dedc_disj3] <*> [goal];
 
   impls <- return $ match_op IMPL goal;
   i1 <- sequence $ [dedc_impl2, dedc_impl3] <*> impls;
