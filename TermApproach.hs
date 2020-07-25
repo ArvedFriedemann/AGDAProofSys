@@ -3,6 +3,7 @@ module TermApproach where
 import Control.Monad.State.Lazy
 import Control.Monad.Writer
 import Safe
+import Data.List
 
 
 data Constant = TOP | BOT deriving (Show, Eq)
@@ -98,25 +99,141 @@ impl_eq3 (a,b) (b',c)
    | otherwise = return []
 
 dedc_eq3 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
-dedc_eq3 (a,c) = do{b <- getVar; return [BOP a EQT (VAR b), BOP (VAR b) EQT c]}
+dedc_eq3 (a,c) = do{b <- getVar; return [BIND EXISTS b (BOP (BOP a EQT (VAR b)) AND (BOP (VAR b) EQT c))]}
 
-from_equivalence :: Term p -> [(Term p, Term p)]
-from_equivalence (BOP a EQT b) = [(a,b)]
-from_equivalence _ = []
+--Conjunction laws
+--A -> B -> A ^ B
+impl_conj1 :: (Eq p) => Term p -> Term p -> VarState p [Term p]
+impl_conj1 a b = return [BOP a AND b]
+
+dedc_conj1 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
+dedc_conj1 (a,b) = return [a,b]
+
+--A ^ B -> A
+impl_conj2 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
+impl_conj2 (a,b) = return [a]
+
+dedc_conj2 :: (Eq p) => Term p -> VarState p [Term p]
+dedc_conj2 a = do { b <- getVar; return [BIND EXISTS b (BOP a AND (VAR b))]}
+
+--A ^ B -> B
+impl_conj3 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
+impl_conj3 (a,b) = return [b]
+
+dedc_conj3 :: (Eq p) => Term p -> VarState p [Term p]
+dedc_conj3 b = do { a <- getVar; return [BIND EXISTS a (BOP (VAR a) AND b)]}
+
+
+
+--Disjunction laws
+--A -> A v B
+impl_disj1 :: (Eq p) => Term p -> VarState p [Term p]
+impl_disj1 a = do { b <- getVar; return [BIND EXISTS b (BOP a OR (VAR b))]}
+
+dedc_disj1 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
+dedc_disj1 (a,b) = return [a]
+
+--B -> A v B
+impl_disj2 :: (Eq p) => Term p -> VarState p [Term p]
+impl_disj2 b = do { a <- getVar; return [BIND EXISTS a (BOP (VAR a) OR b)]}
+
+dedc_disj2 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
+dedc_disj2 (a,b) = return [b]
+
+--A v B, (A -> C), (B -> C) -> C
+impl_disj3 :: (Eq p) => (Term p, Term p) ->
+                        (Term p, Term p) ->
+                        (Term p, Term p) -> VarState p [Term p]
+impl_disj3 (a,b) (a',c) (b',c')
+  | a==a' && b==b' && c==c' = return [c]
+  | otherwise = return []
+
+dedc_disj3 :: (Eq p) => Term p -> VarState p [Term p]
+dedc_disj3 c = do { a <- getVar; b <- getVar;
+                  return [BIND EXISTS a (BIND EXISTS b (conj_list1
+                                [BOP (VAR a) OR (VAR b), BOP (VAR a) IMPL c, BOP (VAR b) IMPL c]) )]}
+
+
+
+--Implication laws
+
+--A, (A -> B) -> B
+impl_impl1 :: (Eq p) => Term p -> (Term p, Term p) -> VarState p [Term p]
+impl_impl1 a (a',b)
+  | a==a' = return [b]
+  | otherwise = return []
+
+dedc_impl1 :: (Eq p) => Term p -> VarState p [Term p]
+dedc_impl1 b = do { a <- getVar; return [BIND EXISTS a (BOP (VAR a) IMPL b)]}
+
+--(A -> B), (B -> C) -> (A -> C)
+impl_impl2 :: (Eq p) => (Term p, Term p) ->
+                        (Term p, Term p) ->
+                        VarState p [Term p]
+impl_impl2 (a,b) (b',c)
+  | b==b' = return [BOP a IMPL c]
+  | otherwise = return []
+
+dedc_impl2 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
+dedc_impl2 (a,c) = do { b <- getVar; return [BIND EXISTS b (conj_list1 [BOP a IMPL (VAR b), BOP (VAR b) IMPL c])]}
+
+--A -> (B -> A)
+impl_impl3 :: (Eq p) => Term p -> VarState p [Term p]
+impl_impl3 a = do { b <- getVar; return [BIND EXISTS b (BOP (VAR b) IMPL a)]}
+
+dedc_impl3 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
+dedc_impl3 (b,a) = return [a]
+
+
+
+
+match_op :: BinOp -> Term p -> [(Term p, Term p)]
+match_op op (BOP a op' b)
+  | op==op' = [(a,b)]
+  | otherwise = []
+match_op _ _ = []
 
 implications :: (Eq p) => [Term p] -> VarState p [Term p]
 implications kb = do {
-  eqs <- return $ concatMap from_equivalence kb;
-  p1 <- sequence $ [impl_eq1, impl_eq2] <*> eqs;
-  p2 <- sequence $ impl_eq3 <$> eqs <*> eqs;
-  return $ concat $ p1 ++ p2
+  eqs <- return $ concatMap (match_op EQT) kb;
+  e1 <- sequence $ [impl_eq1, impl_eq2] <*> eqs;
+  e2 <- sequence $ impl_eq3 <$> eqs <*> eqs;
+
+  ands <- return $ concatMap (match_op AND) kb;
+  c1 <- sequence $ [impl_conj2, impl_conj3] <*> ands;
+  c2 <- sequence $ impl_conj1 <$> kb <*> kb;
+
+  ors <- return $ concatMap (match_op OR) kb;
+  impls <- return $ concatMap (match_op IMPL) kb;
+
+  d1 <- sequence $ [impl_disj1, impl_disj2] <*> kb;
+  d2 <- sequence $ impl_disj3 <$> ors <*> impls <*> impls;
+
+  i1 <- sequence $ impl_impl1 <$> kb <*> impls;
+  i2 <- sequence $ impl_impl2 <$> impls <*> impls;
+  i3 <- sequence $ impl_impl3 <$> kb;
+
+  return $ concat $ concat [e1,e2,c1,c2,d1,d2,i1,i2,i3]
 }
 
 premises :: (Eq p) => Term p-> VarState p [Term p]
 premises goal = do {
-  eqs <- return $ from_equivalence goal;
-  p <- sequence $ [dedc_eq1, dedc_eq2, dedc_eq3] <*> eqs;
-  return $ conj_list1 <$> p
+  eqs <- return $ match_op EQT goal;
+  e1 <- sequence $ [dedc_eq1, dedc_eq2, dedc_eq3] <*> eqs;
+
+  ands <- return $ match_op AND goal;
+  c1 <- sequence $ dedc_conj1 <$> ands;
+  c2 <- sequence $ [dedc_conj2, dedc_conj3] <*> [goal];
+
+  ors <- return $ match_op OR goal;
+  d1 <- sequence $ [dedc_disj1, dedc_disj2] <*> ors;
+  d2 <- sequence $ [dedc_conj3] <*> [goal];
+
+  impls <- return $ match_op IMPL goal;
+  i1 <- sequence $ [dedc_impl2, dedc_impl3] <*> impls;
+  i2 <- sequence $ [dedc_impl1] <*> [goal];
+
+  return $ conj_list1 <$> (concat [e1,c1,c2,d1,d2,i1,i2])
 }
 
 --some pretty printing
@@ -170,7 +287,7 @@ goalOriented kb goal vars = do {
     putStrLn "New Knowledge:";
     (newPosts,vars'') <- return $ runState (implications kb) vars';
     postidcs <- return $ map (+(length newPrems)) [1..(length newPosts)];
-    putStrLn $ unlines $ map (\(x, z) -> "("++x++") "++z) $ zip (show <$> postidcs) (ts <$> newPrems);
+    putStrLn $ unlines $ map (\(x, z) -> "("++x++") "++z) $ zip (show <$> postidcs) (ts <$> newPosts);
 
     idx <- readLn;
     if idx `elem` premsidcs then do {
