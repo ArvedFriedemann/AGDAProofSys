@@ -132,8 +132,17 @@ ppterm :: Term String -> Writer String ()
 ppterm (CONST TOP) = tell "T"
 ppterm (CONST BOT) = tell "()"
 ppterm (VAR v) = tell v
+ppterm (BOP t1@(BOP t1a op1 t1b) op t2@(BOP t2a op2 t2b))
+    | (oplevel op1) < (oplevel op) &&
+      (oplevel op2) < (oplevel op) = tell "(" >> (ppterm t1) >> tell ")" >> ppOp op >> tell "(" >> (ppterm t2) >> tell ")"
+    | (oplevel op1) < (oplevel op) = tell "(" >> (ppterm t1) >> tell ")" >> ppOp op >> (ppterm t2)
+    | (oplevel op2) < (oplevel op) = ppOp op >> (ppterm t1) >> tell "(" >> (ppterm t2) >> tell ")"
+    | otherwise = (ppterm t1) >> ppOp op  >> (ppterm t2)
 ppterm (BOP t1@(BOP tt1 op' tt2) op t2)
-    | (oplevel op') < (oplevel op) = tell "(" >> (ppterm t1) >> tell ")" >> ppOp op >> (ppterm t2)
+    | (oplevel op') < (oplevel op) = tell "(" >> (ppterm t1) >> tell ")" >> ppOp op >> ppterm t2
+    | otherwise = (ppterm t1) >> ppOp op  >> (ppterm t2)
+ppterm (BOP t1 op t2@(BOP tt1 op' tt2))
+    | (oplevel op') < (oplevel op) = ppterm t1 >> ppOp op >> tell "(" >> ppterm t2 >> tell ")"
     | otherwise = (ppterm t1) >> ppOp op  >> (ppterm t2)
 ppterm (BOP t1@(BIND tp p t) op t2) = tell "(" >> (ppterm t1) >> tell ")" >> ppOp op  >> (ppterm t2)
 ppterm (BOP t1 op t2) = (ppterm t1) >> ppOp op  >> (ppterm t2)
@@ -162,6 +171,10 @@ goalOriented kb goal vars = do {
       then putStrLn "Horray!"
       else goalOriented kb newGoal vars'
 }
+
+--Tests
+--goalOriented [BOP (VAR "b") EQT (VAR "a")] (BOP (VAR "a") EQT (VAR "b")) defV
+--goalOriented [] (BOP (BOP (VAR "a") APPL (VAR "b")) EQT (BOP (VAR "a") APPL (VAR "b"))) defV
 
 
 
