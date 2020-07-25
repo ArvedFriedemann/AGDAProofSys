@@ -155,7 +155,12 @@ goalOriented kb goal vars = do {
     putStrLn $ unlines $ ts <$> kb;
     putStrLn "Paths:";
     (newPrems,vars') <- return $ runState (premises goal) vars;
-    putStrLn $ unlines $ ts <$> newPrems
+    putStrLn $ unlines $ map (\(x, z) -> "("++x++") "++z) $ zip (show <$> [1..]) (ts <$> newPrems);
+    idx <- readLn;
+    newGoal <- return $ newPrems !! (idx-1);
+    if newGoal `elem` kb
+      then putStrLn "Horray!"
+      else goalOriented kb newGoal vars'
 }
 
 
