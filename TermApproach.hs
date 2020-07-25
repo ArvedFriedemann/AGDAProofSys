@@ -156,19 +156,37 @@ ppOp EQT = tell "="
 ppOp APPL = tell " "
 
 defV = map ("x"++) $ show <$> [1..]
-
+--TODO! existential needs more that just some variable put somewhere. There already needs to be another term! Maybe that should be considered...should pop up when doing the implications reasoning. In that case, the existential one emerges directly from the kb.
 goalOriented :: [Term String] -> Term String -> [String] -> IO ()
 goalOriented kb goal vars = do {
     putStrLn "Knowledge Base:";
     putStrLn $ unlines $ ts <$> kb;
+
     putStrLn "Paths:";
-    (newPrems,vars') <- return $ runState (premises goal) vars;
-    putStrLn $ unlines $ map (\(x, z) -> "("++x++") "++z) $ zip (show <$> [1..]) (ts <$> newPrems);
+    (newPrems,vars')  <- return $ runState (premises goal) vars;
+    premsidcs <- return $ [1..(length newPrems)];
+    putStrLn $ unlines $ map (\(x, z) -> "("++x++") "++z) $ zip (show <$> premsidcs) (ts <$> newPrems);
+
+    putStrLn "New Knowledge:";
+    (newPosts,vars'') <- return $ runState (implications kb) vars';
+    postidcs <- return $ map (+(length newPrems)) [1..(length newPosts)];
+    putStrLn $ unlines $ map (\(x, z) -> "("++x++") "++z) $ zip (show <$> postidcs) (ts <$> newPrems);
+
     idx <- readLn;
-    newGoal <- return $ newPrems !! (idx-1);
-    if newGoal `elem` kb
-      then putStrLn "Horray!"
-      else goalOriented kb newGoal vars'
+    if idx `elem` premsidcs then do {
+      newGoal <- return $ newPrems !! (idx-1);
+      if newGoal `elem` kb
+        then putStrLn "Horray!"
+        else goalOriented kb newGoal vars''
+    } else if idx `elem` postidcs then do {
+      newKnowledge <- return $ newPosts !! ((idx - (length newPrems))-1);
+      goalOriented (newKnowledge:kb) goal vars''
+    } else do {
+      putStrLn "Invalid Index";
+      goalOriented kb goal vars --need to be default vars here!
+    }
+
+
 }
 
 --Tests
