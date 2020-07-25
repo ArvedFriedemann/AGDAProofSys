@@ -144,7 +144,6 @@ ppterm (BOP t1@(BOP tt1 op' tt2) op t2)
 ppterm (BOP t1 op t2@(BOP tt1 op' tt2))
     | (oplevel op') < (oplevel op) = ppterm t1 >> ppOp op >> tell "(" >> ppterm t2 >> tell ")"
     | otherwise = (ppterm t1) >> ppOp op  >> (ppterm t2)
-ppterm (BOP t1@(BIND tp p t) op t2) = tell "(" >> (ppterm t1) >> tell ")" >> ppOp op  >> (ppterm t2)
 ppterm (BOP t1 op t2) = (ppterm t1) >> ppOp op  >> (ppterm t2)
 ppterm (BIND FORALL p t) = tell ("forall "++p++".") >> (ppterm t)
 ppterm (BIND EXISTS p t) = tell ("exists "++p++".") >> (ppterm t)
