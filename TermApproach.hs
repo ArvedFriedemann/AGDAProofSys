@@ -25,8 +25,9 @@ getVar = do {
     [] -> error "no more variables"
 }
 
-conj_list1 :: [Term p] -> Term p
-conj_list1 = foldr1 (\x y -> BOP x AND y)
+conj_list :: [Term p] -> Term p
+conj_list [] = CONST TOP
+conj_list ls = foldr1 (\x y -> BOP x AND y) ls
 
 disj_list1 :: [Term p] -> Term p
 disj_list1 = foldr1 (\x y -> BOP x AND y)
@@ -68,27 +69,29 @@ impl_eq0 = do{x <- getVar; return [BIND FORALL x (BOP (VAR x) EQT (VAR x))]}
 --implications and proof obligations for a=b
 impl_eq1 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
 impl_eq1 (CONST c1, CONST c2)
-    | c1==c2 = return []
-    | otherwise = return [CONST BOT]
+  | c1==c2 = return []
+  | otherwise = return [CONST BOT]
 impl_eq1 (VAR _, VAR _) = return []
 impl_eq1 (BOP a op b, BOP a' op' b')
-    | op==op' = return [BOP a EQT a', BOP b EQT b']
-    | otherwise = return [CONST BOT]
+  | op==op' = return [BOP a EQT a', BOP b EQT b']
+  | otherwise = return [CONST BOT]
 impl_eq1 (BIND tp p t, BIND tp' p' t')
-    | tp == tp' = do {v <- getVar; return [BOP (exchangeVar p v t) EQT (exchangeVar p' v t')]}
-    | otherwise = return [CONST BOT]
+  | tp == tp' = do {v <- getVar; return [BOP (exchangeVar p v t) EQT (exchangeVar p' v t')]}
+  | otherwise = return [CONST BOT]
 
 dedc_eq1 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
 dedc_eq1 (CONST c1, CONST c2)
-    | c1==c2 = return []
-    | otherwise = return [CONST BOT]
-dedc_eq1 (v1@(VAR _), v2@(VAR _)) = return [BOP v1 EQT v2]
+  | c1==c2 = return []
+  | otherwise = return [CONST BOT]
+dedc_eq1 (v1@(VAR c1), v2@(VAR c2))
+  | c1==c2 = return []
+  | otherwise = return [BOP v1 EQT v2]
 dedc_eq1 (BOP a op b, BOP a' op' b')
-    | op==op' = return [BOP a EQT a', BOP b EQT b']
-    | otherwise = return [CONST BOT]
+  | op==op' = return [BOP a EQT a', BOP b EQT b']
+  | otherwise = return [CONST BOT]
 dedc_eq1 (BIND tp p t, BIND tp' p' t')
-    | tp == tp' = do {v <- getVar; return [BOP (exchangeVar p v t) EQT (exchangeVar p' v t')]}
-    | otherwise = return [CONST BOT]
+  | tp == tp' = do {v <- getVar; return [BOP (exchangeVar p v t) EQT (exchangeVar p' v t')]}
+  | otherwise = return [CONST BOT]
 
 --symmetry a=b -> b=a
 impl_eq2 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
@@ -155,7 +158,7 @@ impl_disj3 (a,b) (a',c) (b',c')
 
 dedc_disj3 :: (Eq p) => Term p -> VarState p [Term p]
 dedc_disj3 c = do { a <- getVar; b <- getVar;
-                  return [BIND EXISTS a (BIND EXISTS b (conj_list1
+                  return [BIND EXISTS a (BIND EXISTS b (conj_list
                                 [BOP (VAR a) OR (VAR b), BOP (VAR a) IMPL c, BOP (VAR b) IMPL c]) )]}
 
 
@@ -180,7 +183,7 @@ impl_impl2 (a,b) (b',c)
   | otherwise = return []
 
 dedc_impl2 :: (Eq p) => (Term p, Term p) -> VarState p [Term p]
-dedc_impl2 (a,c) = do { b <- getVar; return [BIND EXISTS b (conj_list1 [BOP a IMPL (VAR b), BOP (VAR b) IMPL c])]}
+dedc_impl2 (a,c) = do { b <- getVar; return [BIND EXISTS b (conj_list [BOP a IMPL (VAR b), BOP (VAR b) IMPL c])]}
 
 --A -> (B -> A)
 impl_impl3 :: (Eq p) => Term p -> VarState p [Term p]
@@ -204,7 +207,7 @@ dedc_impl3 (b,a) = return [a]
 
 --what if one creates the inplications for the matching? Something in the middle?
 --So, if there is a fact like forall x. x=x, and we want to prove a=a. then we'd have to prove that is is possible for (x=x)[x\k]=(a=a). The stress is on "possible". So we'd have to prove that (x=x)[x\k]=(a=a) -> top. I guess. in the end, we get that it is possible under the assumption that k=a. how can it be enforced? Actually, only via a disjunction. These premises only become facts when there is no other alternative. Unless there is some exists proof...actually, it should be stated that exists k.(x=x)[x|k]=(a=a). in that case, there could be an actual k, which can be found by forward reasoning. this would work well for hand computation, it is kinda hard for automated deduction. Reason is that the existential variables need to be assigned without being sure that the assignment is neither right nor unique. Quite in fact, in most instances, it is not unique. What can be done though is to prove the possibility of matching by stating that the premises hint towards existance.
---or at least all possible deductions don't prevent it. In that instance it must be provable that bot is not provable. 
+--or at least all possible deductions don't prevent it. In that instance it must be provable that bot is not provable.
 
 --QUANTIFIERS!
 
@@ -225,7 +228,13 @@ dedc_impl3 (b,a) = return [a]
 
 
 
+isTop :: Term p -> Bool
+isTop (CONST TOP) = True
+isTop _ = False
 
+isBot :: Term p -> Bool
+isBot (CONST BOT) = True
+isBot _ = False
 
 match_op :: BinOp -> Term p -> [(Term p, Term p)]
 match_op op (BOP a op' b)
@@ -256,7 +265,7 @@ implications kb = do {
   return $ concat $ concat [e1,e2,c1,c2,d1,d2,i1,i2,i3]
 }
 
-premises :: (Eq p) => Term p-> VarState p [Term p]
+premises :: (Eq p) => Term p-> VarState p [[Term p]]
 premises goal = do {
   eqs <- return $ match_op EQT goal;
   e1 <- sequence $ [dedc_eq1, dedc_eq2, dedc_eq3] <*> eqs;
@@ -273,7 +282,7 @@ premises goal = do {
   i1 <- sequence $ [dedc_impl2, dedc_impl3] <*> impls;
   i2 <- sequence $ [dedc_impl1] <*> [goal];
 
-  return $ conj_list1 <$> (concat [e1,c1,c2,d1,d2,i1,i2])
+  return $ {- conj_list  <$> -}(concat [e1,c1,c2,d1,d2,i1,i2])
 }
 
 --some pretty printing
@@ -314,17 +323,17 @@ ppOp APPL = tell " "
 
 defV = map ("x"++) $ show <$> [1..]
 --TODO! existential needs more that just some variable put somewhere. There already needs to be another term! Maybe that should be considered...should pop up when doing the implications reasoning. In that case, the existential one emerges directly from the kb.
-goalOriented :: [Term String] -> Term String -> [String] -> IO ()
-goalOriented kb goal vars = do {
-    putStrLn "Goal:";
-    putStrLn $ ts goal;
+goalOriented :: [Term String] -> [Term String] -> [String] -> IO ()
+goalOriented kb goals vars = do {
+    putStrLn "Goals:";
+    putStrLn $ unlines $ ts <$> goals;
     putStrLn "Knowledge Base:";
     putStrLn $ unlines $ ts <$> kb;
 
     putStrLn "Paths:";
-    (newPrems,vars')  <- return $ runState (premises goal) vars;
+    (newPrems,vars')  <- return $ runState (concat <$> (sequence $ (\g -> (zip $ repeat g) <$> (premises g) ) <$> goals)) vars;
     premsidcs <- return $ [1..(length newPrems)];
-    putStrLn $ unlines $ map (\(x, z) -> "("++x++") "++z) $ zip (show <$> premsidcs) (ts <$> newPrems);
+    putStrLn $ unlines $ map (\(x, z) -> "("++x++") "++z) $ zip (show <$> premsidcs) ((ts.conj_list.snd) <$> newPrems);
 
     putStrLn "New Knowledge:";
     (newPosts,vars'') <- return $ runState (implications kb) vars';
@@ -333,26 +342,29 @@ goalOriented kb goal vars = do {
 
     idx <- readLn;
     if idx `elem` premsidcs then do {
-      newGoal <- return $ newPrems !! (idx-1);
-      if newGoal `elem` kb
+      (oldGoal, newGoals) <- return $ newPrems !! (idx-1);
+      goals' <- return $ filter (not.isTop) ((newGoals ++ goals) \\ [oldGoal]);
+      if null (goals' \\ kb)
         then putStrLn "Horray!"
-        else goalOriented kb newGoal vars''
+        else goalOriented kb (goals' \\ kb) vars''
     } else if idx `elem` postidcs then do {
       newKnowledge <- return $ newPosts !! ((idx - (length newPrems))-1);
-      goalOriented (newKnowledge:kb) goal vars''
+      goalOriented (newKnowledge:kb) goals vars''
     } else do {
       putStrLn "Invalid Index";
-      goalOriented kb goal vars --need to be default vars here!
+      goalOriented kb goals vars --need to be default vars here!
     }
 
 
 }
 
 --Tests
---goalOriented [BOP (VAR "b") EQT (VAR "a")] (BOP (VAR "a") EQT (VAR "b")) defV
---goalOriented [] (BOP (BOP (VAR "a") APPL (VAR "b")) EQT (BOP (VAR "a") APPL (VAR "b"))) defV
+--goalOriented [BOP (VAR "b") EQT (VAR "a")] [(BOP (VAR "a") EQT (VAR "b"))] defV
+--goalOriented [BOP (VAR "b") EQT (VAR "c")] [(BOP (BOP (VAR "a") APPL (VAR "a")) EQT (BOP (VAR "b") APPL (VAR "c")))] defV
 
 
+
+--only knowing something has to hold turns goals into knowledge!
 
 --quantifiers now done with kinda like functions. rules are
 --forall x t[x] -> t[x/y] -- so a term either just holds or it has a variable that can be swallowed by a universal quantifier.
