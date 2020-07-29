@@ -41,14 +41,16 @@ runIntBind = runIdentity . evalIntBindingT . runExceptT
 con :: Constant -> OpenTerm
 con = UTerm . CONST
 
+scon :: String -> OpenTerm
+scon s = UTerm (CONST (CON s))
+
 appl :: OpenTerm -> OpenTerm -> OpenTerm
 appl a b = UTerm (APPL a b)
 
 --TODO! This should be a foldl, not foldr! WARNING!
 list :: [OpenTerm] -> OpenTerm
 list [] = UTerm (CONST TOP)
-list (x:y:[]) = UTerm (APPL x y)
-list (x:xs) = UTerm (APPL x (list xs))
+list ls = foldl1 (\x y -> UTerm (APPL x y)) ls
 
 clst :: [CTerm a] -> CTerm a
 clst [] = CCONST BOT
@@ -133,7 +135,8 @@ bindConst bnds (CAPPL a b) = CAPPL (bindConst bnds a) (bindConst bnds b)
 ----------------------------------
 --testing stuff
 ----------------------------------
-binds = bindConst ["=","^"]
+bounds = ["=","^","->","v"]
+binds = bindConst bounds
 testkb = binds <$> rt <$> ["a = a", "b = b", "(a ^ (a -> b)) -> b"]
 testgoal = binds $ rt $ "(k k) = (l m)"
 
@@ -178,3 +181,9 @@ termFromString::String -> CTerm String
 termFromString = safeParse term
 rt::String -> CTerm String
 rt = termFromString
+
+
+freshTermFromString :: String -> IntBinding OpenTerm
+freshTermFromString = freshTermFromString' []
+freshTermFromString' :: [String] -> String -> IntBinding OpenTerm
+freshTermFromString' bnds s = createOpenTerm $ bindConst bnds $ rt s
