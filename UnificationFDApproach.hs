@@ -37,6 +37,8 @@ type MError = UFailure Term IntVar
 type IntBindMon = ExceptT MError IntBinding
 
 runIntBind = runIdentity . evalIntBindingT . runExceptT
+runIntBindState = runIdentity . runIntBindingT . runExceptT
+--runIntBindT = runIdentity . evalIntBindingT . runExceptT
 
 con :: Constant -> OpenTerm
 con = UTerm . CONST
