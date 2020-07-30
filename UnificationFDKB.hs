@@ -10,10 +10,10 @@ import Data.Either
 
 type IntKB = ([OpenTerm], [(OpenTerm, OpenTerm)]) --facts and rules
 
-implications :: IntKB -> IntBindMon [OpenTerm]
+implications :: (Monad m) => IntKB -> IntBindMonT m [OpenTerm]
 implications (facts, rules) = allSucceeding [lookout $ applyRule f r | f <- facts, r <- rules]
 
-applyRule :: OpenTerm -> (OpenTerm, OpenTerm) -> IntBindMon OpenTerm
+applyRule :: (Monad m) => OpenTerm -> (OpenTerm, OpenTerm) -> IntBindMonT m OpenTerm
 applyRule fact (pre,post) = do {
   lst <- freshenAll [pre,post];
   case lst of
@@ -23,7 +23,7 @@ applyRule fact (pre,post) = do {
     }
 }
 
-reverseRule :: (OpenTerm, OpenTerm) -> OpenTerm -> IntBindMon OpenTerm
+reverseRule :: (Monad m) => (OpenTerm, OpenTerm) -> OpenTerm -> IntBindMonT m OpenTerm
 reverseRule (pre,post) fact = do {
   lst <- freshenAll [pre,post];
   case lst of
@@ -33,7 +33,7 @@ reverseRule (pre,post) fact = do {
     }
 }
 
-matchImpl :: OpenTerm -> IntBindMon (OpenTerm, OpenTerm)
+matchImpl :: (Monad m) => OpenTerm -> IntBindMonT m (OpenTerm, OpenTerm)
 matchImpl t = do {v1 <- lift freshVar; v2 <- lift freshVar;
   unify t (list [v1, scon "->", v2]);
   pre <- applyBindings v1;
@@ -41,13 +41,14 @@ matchImpl t = do {v1 <- lift freshVar; v2 <- lift freshVar;
   return (pre,post)
 }
 
-getImpls :: [OpenTerm] -> IntBindMon [(OpenTerm,OpenTerm)]
+getImpls :: (Monad m) => [OpenTerm] -> IntBindMonT m [(OpenTerm,OpenTerm)]
 getImpls ts = allSucceeding $ (lookout.matchImpl) <$> ts
 
-allSucceeding :: [IntBindMon a] -> IntBindMon [a]
+allSucceeding :: (Monad m) => [IntBindMonT m a] -> IntBindMonT m [a]
 allSucceeding mons = concat <$> (sequence [catchE (return <$> m) (const $ return []) | m <- mons])
 
-splitSucceeding :: (OpenTerm -> IntBindMon a) -> [OpenTerm] -> IntBindMon ([a],[OpenTerm])
+splitSucceeding :: (Monad m) => (OpenTerm -> IntBindMonT m a) -> [OpenTerm]
+                                -> IntBindMonT m ([a],[OpenTerm])
 splitSucceeding fkt ts = do {
   e <- sequence [catchE (Left <$> fkt t) (const $ return $ Right t) | t <- ts];
   return (lefts e, rights e)
@@ -67,7 +68,8 @@ test2 = runIntBind $ do {
   return $ ppCTerm <$> giveNiceNames <$> fromOpenTerm <$> impls
 }
 
---makeProof':: [OpenTerm] -> [OpenTerm] -> IO ()
---makeProof' kb goals = do {
---
---}
+makeProof':: [OpenTerm] -> [OpenTerm] -> IntBindMonT IO ()
+makeProof' kb goals = do {
+  t <- lift $ freshTermFromString "a";
+  return ()
+}

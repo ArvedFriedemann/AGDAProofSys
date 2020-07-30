@@ -35,10 +35,13 @@ type OpenTerm = UTerm Term IntVar
 type IntBinding = IntBindingT Term Identity
 type MError = UFailure Term IntVar
 type IntBindMon = ExceptT MError IntBinding
+type IntBindingTT m = IntBindingT Term m
+type IntBindMonT m = ExceptT MError (IntBindingTT m)
 
 runIntBind = runIdentity . evalIntBindingT . runExceptT
 runIntBindState = runIdentity . runIntBindingT . runExceptT
---runIntBindT = runIdentity . evalIntBindingT . runExceptT
+runIntBindT :: (Monad m) => IntBindMonT m a -> m (Either MError a)
+runIntBindT m = evalIntBindingT $ runExceptT m
 
 con :: Constant -> OpenTerm
 con = UTerm . CONST
@@ -66,7 +69,7 @@ lookout m = do {
   return r
 }
 
-freshVar :: IntBinding OpenTerm
+freshVar :: (Monad m) => IntBindingTT m OpenTerm
 freshVar = UVar <$> freeVar
 
 nubVars :: (Eq a) => CTerm a -> [a]
@@ -77,7 +80,7 @@ vars' (CCONST _) = return ()
 vars' (CVAR a) = tell [a]
 vars' (CAPPL a b) = vars' a >> vars' b
 
-createOpenTerm :: (Eq a) => CTerm a -> IntBinding OpenTerm
+createOpenTerm :: (Monad m) => (Eq a) => CTerm a -> IntBindingTT m OpenTerm
 createOpenTerm t = do {
   vars <- return $ nubVars t;
   intVars <- sequence $ [freshVar | v <- vars];
@@ -101,8 +104,8 @@ applyCBind asm (CVAR v)    = CVAR $ lookupJust v asm
 applyCBind asm (CAPPL a b) = CAPPL (applyCBind asm a) (applyCBind asm b)
 
 
-getPossibleMatches :: [OpenTerm] -> OpenTerm -> IntBindMon [OpenTerm]
-getPossibleMatches kb goal = concat <$> (sequence $ [catchE (lookout $ do {u <- unify t goal; return <$> ((applyBindings u) :: IntBindMon OpenTerm)}) (const $ return []) | t <- kb])
+--getPossibleMatches :: (Monad m) => [OpenTerm] -> OpenTerm -> IntBindMonT m [OpenTerm]
+--getPossibleMatches kb goal = concat <$> (sequence $ [catchE (lookout $ do {u <- unify t goal; return <$> ((applyBindings u) :: IntBindMonT m OpenTerm)}) (const $ return []) | t <- kb])
 
 
 
@@ -145,8 +148,9 @@ testgoal = binds $ rt $ "(k k) = (l m)"
 test1 = runIntBind $ do {
   kb <- sequence $ lift <$> createOpenTerm <$> testkb;
   goal <- lift $ createOpenTerm testgoal;
-  mts <- getPossibleMatches kb goal;
-  return $ ppCTerm <$> giveNiceNames <$> fromOpenTerm <$> mts
+  --mts <- getPossibleMatches kb goal;
+  --return $ ppCTerm <$> giveNiceNames <$> fromOpenTerm <$> mts
+  return ()
 }
 
 ----------------------------------
@@ -185,7 +189,7 @@ rt::String -> CTerm String
 rt = termFromString
 
 
-freshTermFromString :: String -> IntBinding OpenTerm
+freshTermFromString :: (Monad m) => String -> IntBindingTT m OpenTerm
 freshTermFromString = freshTermFromString' []
-freshTermFromString' :: [String] -> String -> IntBinding OpenTerm
+freshTermFromString' :: (Monad m) => [String] -> String -> IntBindingTT m OpenTerm
 freshTermFromString' bnds s = createOpenTerm $ bindConst bnds $ rt s
