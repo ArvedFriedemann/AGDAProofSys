@@ -106,10 +106,13 @@ makeProof' kb goal = do {
   lift2 $ putStrLn $ oTToString goal;
   actions1 <- possibleActions [(\u -> (u,t)) <$> (unify t goal >>= applyBindings) | t <- kb];
   actions2 <- possibleActions [(\u -> (u,(pre,post))) <$> (unify goal post >> applyBindings pre) | (pre,post) <- rules];
+  actions3 <- possibleActions [(\u -> (u,(f,pre,post))) <$> (unify f post >> applyBindings pre) | (pre,post) <- rules, f <- kb];
   lift2 $ putStrLn "Axiom Actions:";
   lift2 $ sequence [putStrLn $ (show idx) ++ ": " ++ (oTToString o) ++ " from "++(oTToString t) | (idx, ((o,t),_)) <- zip [1..] actions1];
   lift2 $ putStrLn "Reverse Rule Actions:";
   lift2 $ sequence [putStrLn $ (show idx) ++ ": " ++ (oTToString o) ++ " from "++(oTToString pre) ++ "->" ++(oTToString post) | (idx, ((o,(pre,post)),_)) <- zip [1..] actions2];
+  lift2 $ putStrLn "Fact Implication Actions:";
+  lift2 $ sequence [putStrLn $ (show idx) ++ ": " ++ (oTToString o) ++ " from "++(oTToString pre) ++ "->" ++(oTToString post) ++ " and " ++(oTToString f) | (idx, ((o,(f,pre,post)),_)) <- zip [1..] actions3];
   --lift2 $ putStrLn "Axioms:";
   --lift2 $ sequence $ (putStrLn.oTToString) <$> axioms;
   --lift2 $ putStrLn "Implications from DB:";
