@@ -104,6 +104,11 @@ applyCBind asm (CVAR v)    = CVAR $ lookupJust v asm
 applyCBind asm (CAPPL a b) = CAPPL (applyCBind asm a) (applyCBind asm b)
 
 
+mapVars :: (a -> b) -> CTerm a -> CTerm b
+mapVars fkt (CCONST c) = CCONST c
+mapVars fkt (CVAR v) = CVAR (fkt v)
+mapVars fkt (CAPPL a b) = CAPPL (mapVars fkt a) (mapVars fkt b)
+
 --getPossibleMatches :: (Monad m) => [OpenTerm] -> OpenTerm -> IntBindMonT m [OpenTerm]
 --getPossibleMatches kb goal = concat <$> (sequence $ [catchE (lookout $ do {u <- unify t goal; return <$> ((applyBindings u) :: IntBindMonT m OpenTerm)}) (const $ return []) | t <- kb])
 
@@ -112,7 +117,20 @@ applyCBind asm (CAPPL a b) = CAPPL (applyCBind asm a) (applyCBind asm b)
 ---------------------------------------------------------
 --pretty printing
 ---------------------------------------------------------
-niceNames = (take 26 (return <$> ['a'..])) ++ (map ("x" ++) (show <$> [1..]))
+niceNameMultConst = 9
+niceNames :: [String]
+niceNames = niceNames' 0
+niceNames' :: Int -> [String]
+niceNames' 0 = niceNames' 1
+niceNames' 1 = (take 26 $ return <$> ['a'..]) ++ (map ("x" ++) (show <$> [1..]))
+niceNames' n = (concat [zipWith (++) (replicate n letter) (show <$> [1..])| letter <- take 26 $ return <$> ['a'..]] ) ++ (map ("x" ++) (show <$> [1..]))
+
+intVarToInt :: IntVar -> Int
+intVarToInt (IntVar i) = i
+
+giveNiceIntNames :: CTerm IntVar -> CTerm String
+giveNiceIntNames = mapVars ((\x -> (niceNames' niceNameMultConst) !! x).(\x -> x `mod` (26 * niceNameMultConst)).intVarToInt)
+  where niceNameMultConst = 1 -- 9
 
 giveNiceNames :: (Eq a) => CTerm a -> CTerm String
 giveNiceNames t = applyCBind asm t
@@ -138,7 +156,7 @@ bindConst bnds (CVAR x)
 bindConst bnds (CAPPL a b) = CAPPL (bindConst bnds a) (bindConst bnds b)
 
 oTToString :: OpenTerm -> String
-oTToString t = ppCTerm $ giveNiceNames $ fromOpenTerm t
+oTToString t = ppCTerm $ giveNiceIntNames $ fromOpenTerm t
 
 ----------------------------------
 --testing stuff
