@@ -137,6 +137,9 @@ bindConst bnds (CVAR x)
     | otherwise = CVAR x
 bindConst bnds (CAPPL a b) = CAPPL (bindConst bnds a) (bindConst bnds b)
 
+oTToString :: OpenTerm -> String
+oTToString t = ppCTerm $ giveNiceNames $ fromOpenTerm t
+
 ----------------------------------
 --testing stuff
 ----------------------------------
