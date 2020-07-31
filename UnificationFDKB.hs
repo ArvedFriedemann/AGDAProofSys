@@ -106,7 +106,7 @@ makeProof' kb goal = do {
   lift2 $ putStrLn $ oTToString goal;
   actions1 <- possibleActions [(\u -> (u,t)) <$> (unify t goal >>= applyBindings) | t <- kb];
   actions2 <- possibleActions [(\u -> (u,(pre,post))) <$> (unify goal post >> applyBindings pre) | (pre,post) <- rules];
-  actions3 <- possibleActions [(\u -> (u,(f,pre,post))) <$> (unify f post >> applyBindings pre) | (pre,post) <- rules, f <- kb];
+  actions3 <- possibleActions [(\u -> (u,(f,pre,post))) <$> (unify f pre >> applyBindings post) | (pre,post) <- rules, f <- kb];
   lift2 $ putStrLn "Axiom Actions:";
   lift2 $ sequence [putStrLn $ (show idx) ++ ": " ++ (oTToString o) ++ " from "++(oTToString t) | (idx, ((o,t),_)) <- zip [1..] actions1];
   lift2 $ putStrLn "Reverse Rule Actions:";

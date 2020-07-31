@@ -130,7 +130,7 @@ intVarToInt (IntVar i) = i
 
 giveNiceIntNames :: CTerm IntVar -> CTerm String
 giveNiceIntNames = mapVars ((\x -> (niceNames' niceNameMultConst) !! x).(\x -> x `mod` (26 * niceNameMultConst)).intVarToInt)
-  where niceNameMultConst = 1 -- 9
+  where niceNameMultConst = 9
 
 giveNiceNames :: (Eq a) => CTerm a -> CTerm String
 giveNiceNames t = applyCBind asm t
