@@ -93,8 +93,8 @@ test3 = runIntBindT $ do {
 makeProof':: [OpenTerm] -> OpenTerm -> IntBindMonT IO ()
 makeProof' kb goal = do {
   axioms <- allSucceeding $ [(unify t goal >>= applyBindings) | t <- kb];
-  --(rules, facts) <- splitSucceeding (lookout.matchImpl) kb;
-  --impls <- implications (facts, rules);
+  (rules, facts) <- splitSucceeding (lookout.matchImpl) kb;
+  impls <- implications (facts, rules);
   --newgoals <- premises rules goal;
 
   --t1 <- stdcrt "a ^ b";
@@ -104,9 +104,12 @@ makeProof' kb goal = do {
   lift2 $ sequence [putStrLn $ oTToString fact | fact <- kb];
   lift2 $ putStrLn "Goal:";
   lift2 $ putStrLn $ oTToString goal;
-  lift2 $ putStrLn "Actions:";
-  actions <- possibleActions [(\u -> (u,t)) <$> (unify t goal >>= applyBindings) | t <- kb];
-  lift2 $ sequence [putStrLn $ (show idx) ++ ": " ++ (oTToString o) ++ " from "++(oTToString t) | (idx, ((o,t),_)) <- zip [1..] actions];
+  actions1 <- possibleActions [(\u -> (u,t)) <$> (unify t goal >>= applyBindings) | t <- kb];
+  actions2 <- possibleActions [(\u -> (u,(pre,post))) <$> (unify goal post >> applyBindings pre) | (pre,post) <- rules];
+  lift2 $ putStrLn "Axiom Actions:";
+  lift2 $ sequence [putStrLn $ (show idx) ++ ": " ++ (oTToString o) ++ " from "++(oTToString t) | (idx, ((o,t),_)) <- zip [1..] actions1];
+  lift2 $ putStrLn "Reverse Rule Actions:";
+  lift2 $ sequence [putStrLn $ (show idx) ++ ": " ++ (oTToString o) ++ " from "++(oTToString pre) ++ "->" ++(oTToString post) | (idx, ((o,(pre,post)),_)) <- zip [1..] actions2];
   --lift2 $ putStrLn "Axioms:";
   --lift2 $ sequence $ (putStrLn.oTToString) <$> axioms;
   --lift2 $ putStrLn "Implications from DB:";
