@@ -7,6 +7,7 @@ import Control.Unification.IntVar
 import Control.Monad.Trans
 import Control.Monad.Trans.Except
 import Data.Either
+import Debug.Trace
 
 type IntKB = ([OpenTerm], [(OpenTerm, OpenTerm)]) --facts and rules
 
@@ -38,11 +39,31 @@ reverseRule (pre,post) fact = do {
 
 matchImpl :: (Monad m) => OpenTerm -> IntBindMonT m (OpenTerm, OpenTerm)
 matchImpl t = do {v1 <- lift freshVar; v2 <- lift freshVar;
-  unify t (list [v1, scon "->", v2]);
+  impltrm <- return $ list [v1, scon "->", v2];
+  sub <- subsumes impltrm t;
+  vd <- lift $ freeVar;
+  if sub then return () else throwE (occursFailure vd impltrm); --TODO: this is super hacky. But subsumes check is necessary.
+  unify t impltrm;
   pre <- applyBindings v1;
   post <- applyBindings v2;
   return (pre,post)
 }
+
+--right associative version
+--matchImplLst :: (Monad m) => OpenTerm -> IntBindMonT m ([OpenTerm], OpenTerm)
+--matchImplLst t = lookout $ catchE (do {
+--                          (pre,post) <- matchImpl t;
+--                          (pres, post') <- matchImplLst post;
+--                          return (pre:pres, post')})
+--                          (const $ return ([],t))
+
+--TODO: this is a hack. Implication should not be left associative!
+matchImplLst :: (Monad m) => OpenTerm -> IntBindMonT m ([OpenTerm], OpenTerm)
+matchImplLst t = lookout $ catchE (do {
+                          (pre,post) <- matchImpl t;
+                          (pres, post') <- matchImplLst pre;
+                          return (pres++[post'], post)})
+                          (const $ return ([],t))
 
 getImpls :: (Monad m) => [OpenTerm] -> IntBindMonT m [(OpenTerm,OpenTerm)]
 getImpls ts = allSucceeding $ (lookout.matchImpl) <$> ts
@@ -57,10 +78,37 @@ splitSucceeding fkt ts = do {
   return (lefts e, rights e)
 }
 
+lookoutCatch :: (Monad m) => IntBindMonT m a -> IntBindMonT m [a]
+lookoutCatch m = lookout $ catchE (return <$> m) (const $ return [])
+
 --tries out every action (always backtracking to the original state) and returns the action paired with the result they'd give. A generalised lookout or allSucceeding. BACKTRACKS IN ALL CASES!
 possibleActions:: (Monad m) => [IntBindMonT m a] -> IntBindMonT m [(a,IntBindMonT m a)]
-possibleActions acts = concat <$> (sequence [lookout $ catchE ((\r -> [(r, m)]) <$> m) (const $ return []) | m <- acts])
+possibleActions acts = concat <$> (sequence [lookoutCatch ((\r -> (r, m)) <$> m) | m <- acts])
 
+--gives all possible merges of the goal with the facts, together with an optimised action that can apply that match to the state. The optimised action may only give a pointer to the correct term, the other two given terms have aplied bindings. The first term is the original factm the second the original goal and the third the new goal, all with applied bindings at their respective time of application.
+possibleFactMerges :: (Monad m) => [OpenTerm] -> OpenTerm ->
+                      IntBindMonT m [(IntBindMonT m OpenTerm, OpenTerm, OpenTerm, OpenTerm)]
+possibleFactMerges kb goal = concat <$> (sequence $ [lookoutCatch $
+                                        do {g' <- applyBindings goal;
+                                            t' <- applyBindings t;
+                                            act;
+                                            g'' <- applyBindings goal;
+                                            return (act, t', g', g'') }
+                                          | (act, t) <- [(unify t goal, t) | t <- kb]])
+
+--outputs are the action, the original rule, the original goal, the old goal after application, the new goal
+--TODO: the implication match should be recursive, to get multiple new goals.
+--possibleBWRuleMerges :: (Monad m) => [OpenTerm] -> OpenTerm ->
+--                      IntBindMonT m [(IntBindMonT m OpenTerm, OpenTerm, OpenTerm, OpenTerm, OpenTerm)]
+--possibleBWRuleMerges kb goal = concat <$> (sequence $ [lookoutCatch $
+--                                        do {g' <- applyBindings goal;
+--                                            t' <- applyBindings t;
+--                                            pre <- act;
+--                                            g'' <- applyBindings goal;
+--                                            pre' <- applyBindings pre;
+--                                            return (act, t', g', g'', pre') }
+--                                          | (act, t) <- [(do {(pre,post) <- matchImpl t; unify post goal; return pre)}, t) | t <- kb]])
+--
 
 stdcrt :: (Monad m) => String -> ExceptT MError (IntBindingT Term m) OpenTerm
 stdcrt = lift.createOpenTerm.stdrd
@@ -90,6 +138,21 @@ test3 = runIntBindT $ do {
   makeProof' kbr (head facts)
 }
 
+testrules4 = map stdrd [("(a v b) -> (a -> c) -> (b -> c) -> c")]
+testfact4 = stdrd "a"
+
+test4 = runIntBindT $ do {
+  kbr <- sequence $ lift <$> createOpenTerm <$> testrules4;
+  facts <- lift $ createOpenTerm testfact4;
+  (prems,post) <- matchImplLst (head kbr);
+  --TODO: This should give way mor premises...
+  lift2 $ putStrLn "Original:";
+  lift2 $ putStrLn $ oTToString (head kbr);
+  lift2 $ putStrLn "Extracted:";
+  lift2 $ sequence $ putStrLn <$> oTToString <$> prems;
+  lift2 $ putStrLn $ oTToString post;
+}
+
 makeProof':: [OpenTerm] -> OpenTerm -> IntBindMonT IO ()
 makeProof' kb goal = do {
   axioms <- allSucceeding $ [(unify t goal >>= applyBindings) | t <- kb];
@@ -104,11 +167,12 @@ makeProof' kb goal = do {
   lift2 $ sequence [putStrLn $ oTToString fact | fact <- kb];
   lift2 $ putStrLn "Goal:";
   lift2 $ putStrLn $ oTToString goal;
-  actions1 <- possibleActions [(\u -> (u,t)) <$> (unify t goal >>= applyBindings) | t <- kb];
+  --TODO: For proper visuals, bindings need to be applied to the rule as well maybe...
+  actions1 <- possibleFactMerges kb goal;
   actions2 <- possibleActions [(\u -> (u,(pre,post))) <$> (unify goal post >> applyBindings pre) | (pre,post) <- rules];
   actions3 <- possibleActions [(\u -> (u,(f,pre,post))) <$> (unify f pre >> applyBindings post) | (pre,post) <- rules, f <- kb];
   lift2 $ putStrLn "Axiom Actions:";
-  lift2 $ sequence [putStrLn $ (show idx) ++ ": " ++ (oTToString o) ++ " from "++(oTToString t) | (idx, ((o,t),_)) <- zip [1..] actions1];
+  lift2 $ sequence [putStrLn $ (show idx) ++ ": " ++ (oTToString o) ++ " from "++(oTToString t)++" and "++(oTToString g) | (idx, (_,t,g,o)) <- zip [1..] actions1];
   lift2 $ putStrLn "Reverse Rule Actions:";
   lift2 $ sequence [putStrLn $ (show idx) ++ ": " ++ (oTToString o) ++ " from "++(oTToString pre) ++ "->" ++(oTToString post) | (idx, ((o,(pre,post)),_)) <- zip [1..] actions2];
   lift2 $ putStrLn "Fact Implication Actions:";
