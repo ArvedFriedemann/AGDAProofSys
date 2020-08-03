@@ -8,6 +8,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Except
 import Data.Either
 import Debug.Trace
+import Data.List
 
 type IntKB = ([OpenTerm], [(OpenTerm, OpenTerm)]) --facts and rules
 
@@ -67,6 +68,17 @@ matchImplLst t = lookout $ catchE (do {
 
 getImpls :: (Monad m) => [OpenTerm] -> IntBindMonT m [(OpenTerm,OpenTerm)]
 getImpls ts = allSucceeding $ (lookout.matchImpl) <$> ts
+
+getImplsLst :: (Monad m) => [OpenTerm] -> IntBindMonT m [([OpenTerm],OpenTerm)]
+getImplsLst ts = sequence $ (lookout.matchImplLst) <$> ts
+
+--gives lookout old and new goals for match against goal
+implLstAgainstGoal :: (Monad m) => [([OpenTerm],OpenTerm)] -> OpenTerm -> IntBindMonT m [(OpenTerm, [OpenTerm])]
+implLstAgainstGoal rules goal = allSucceeding $ [do {
+                      oldgoal <- unify post goal >>= applyBindings;
+                      newgoals <- sequence $ applyBindings <$> prems;
+                      return (oldgoal, newgoals)
+                      } | (prems, post) <- rules]
 
 allSucceeding :: (Monad m) => [IntBindMonT m a] -> IntBindMonT m [a]
 allSucceeding mons = (map fst) <$> possibleActions mons
@@ -135,7 +147,7 @@ test3 = runIntBindT $ do {
 
   kbr <- sequence $ lift <$> createOpenTerm <$> testrules3;
   facts <- sequence $ lift <$> createOpenTerm <$> testfacts3;
-  makeProof' kbr (head facts)
+  makeProofOld' kbr (head facts)
 }
 
 testrules4 = map stdrd [("(a v b) -> (a -> c) -> (b -> c) -> c")]
@@ -153,8 +165,37 @@ test4 = runIntBindT $ do {
   lift2 $ putStrLn $ oTToString post;
 }
 
-makeProof':: [OpenTerm] -> OpenTerm -> IntBindMonT IO ()
-makeProof' kb goal = do {
+testrules5 = map stdrd ["(a v b) -> (a -> c) -> (b -> c) -> c", "a -> b -> (a ^ b)", "a -> (a v b)", "b -> (a v b)"]
+testfacts5 = map stdrd ["a ^ b", "a v b"]
+
+test5 = runIntBindT $ do {
+  kbr <- sequence $ lift <$> createOpenTerm <$> testrules5;
+  goals <- sequence $ lift <$> createOpenTerm <$> testfacts5;
+  makeProof kbr goals;
+}
+
+makeProof :: [OpenTerm] -> [OpenTerm] -> IntBindMonT IO ()
+makeProof kb goals = do {
+  impllst <- getImplsLst kb;
+  sequence $ [
+    do {
+      gbind <- applyBindings goal;
+      lift2 $ putStr $ "Goal: ";
+      lift2 $ putStrLn $ oTToString gbind;
+      lst <- implLstAgainstGoal impllst goal;
+      lift2 $ putStrLn $ "Matches: ";
+      sequence $ [(lift2 $ putStr (concat $ intersperse " ^ " [(oTToString p)| p <- newgoals])) >>
+                   lift2 (putStrLn (" from "++(oTToString oldgoal)++""))|
+                              (oldgoal, newgoals) <- lst];
+      lift2 $ putStrLn "";
+    }
+    | goal <- goals
+  ];
+  return ()
+}
+
+makeProofOld':: [OpenTerm] -> OpenTerm -> IntBindMonT IO ()
+makeProofOld' kb goal = do {
   axioms <- allSucceeding $ [(unify t goal >>= applyBindings) | t <- kb];
   (rules, facts) <- splitSucceeding (lookout.matchImpl) kb;
   impls <- implications (facts, rules);
