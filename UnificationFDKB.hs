@@ -72,12 +72,12 @@ getImpls ts = allSucceeding $ (lookout.matchImpl) <$> ts
 getImplsLst :: (Monad m) => [OpenTerm] -> IntBindMonT m [([OpenTerm],OpenTerm)]
 getImplsLst ts = sequence $ (lookout.matchImplLst) <$> ts
 
---gives lookout old and new goals for match against goal
-implLstAgainstGoal :: (Monad m) => [([OpenTerm],OpenTerm)] -> OpenTerm -> IntBindMonT m [(OpenTerm, [OpenTerm])]
+--gives lookout old and new goals for match against goal. Additionally gives the original rule to apply it again if necessary.
+implLstAgainstGoal :: (Monad m) => [([OpenTerm],OpenTerm)] -> OpenTerm -> IntBindMonT m [(OpenTerm, [OpenTerm], ([OpenTerm], OpenTerm) )]
 implLstAgainstGoal rules goal = allSucceeding $ [do {
                       oldgoal <- unify post goal >>= applyBindings;
                       newgoals <- sequence $ applyBindings <$> prems;
-                      return (oldgoal, newgoals)
+                      return (oldgoal, newgoals, (prems, post))
                       } | (prems, post) <- rules]
 
 allSucceeding :: (Monad m) => [IntBindMonT m a] -> IntBindMonT m [a]
@@ -165,13 +165,30 @@ test4 = runIntBindT $ do {
   lift2 $ putStrLn $ oTToString post;
 }
 
-testrules5 = map stdrd ["(a v b) -> (a -> c) -> (b -> c) -> c", "a -> b -> (a ^ b)", "a -> (a v b)", "b -> (a v b)"]
+testrules5 = map stdrd ["a -> b -> (a ^ b)", "a -> (a v b)", "b -> (a v b)"]
 testfacts5 = map stdrd ["a ^ b", "a v b"]
 
 test5 = runIntBindT $ do {
   kbr <- sequence $ lift <$> createOpenTerm <$> testrules5;
   goals <- sequence $ lift <$> createOpenTerm <$> testfacts5;
-  makeProof kbr goals;
+  (kb', newgoals) <- propagateProof kbr goals;
+  makeProof kb' newgoals;
+}
+
+--returns the proof state (kb and goals) after propagation.
+propagateProof :: [OpenTerm] -> [OpenTerm] -> IntBindMonT IO ([OpenTerm], [OpenTerm])
+propagateProof kb goals = do {
+  impllst <- getImplsLst kb;
+  newgoals <- concat <$> sequence [do {
+      lst <- implLstAgainstGoal impllst goal;
+      case lst of
+        [] -> fail ("goal " ++ (oTToString goal) ++ "cannot be resolved.")
+        [(_,_,(pres, post))] -> unify post goal >> return pres
+        _ -> return [goal]
+    } | goal <- goals];
+  if (fromOpenTerm <$> newgoals) == (fromOpenTerm <$> goals)
+    then return (kb, newgoals)
+    else propagateProof kb newgoals
 }
 
 makeProof :: [OpenTerm] -> [OpenTerm] -> IntBindMonT IO ()
@@ -186,7 +203,7 @@ makeProof kb goals = do {
       lift2 $ putStrLn $ "Matches: ";
       sequence $ [(lift2 $ putStr (concat $ intersperse " ^ " [(oTToString p)| p <- newgoals])) >>
                    lift2 (putStrLn (" from "++(oTToString oldgoal)++""))|
-                              (oldgoal, newgoals) <- lst];
+                              (oldgoal, newgoals, _) <- lst];
       lift2 $ putStrLn "";
     }
     | goal <- goals
