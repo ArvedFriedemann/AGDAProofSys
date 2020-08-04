@@ -167,11 +167,20 @@ test4 = runIntBindT $ do {
 
 testrules5 = map stdrd ["a -> b -> (a ^ b)", "a -> (a v b)", "b -> (a v b)"]
 testfacts5 = map stdrd ["a ^ b", "a v b"]
+testprogram = map ((bindConst ["append","[]",":","c"]).stdrd)
+  [ "append [] x x",
+   "(append xs y zs) -> (append (x : xs) y (x : zs))"]
+testquery   = map ((bindConst ["append","[]",":","c"]).stdrd)
+  [ "append (c : c : []) (c : []) x"]
 
 test5 = runIntBindT $ do {
-  kbr <- sequence $ lift <$> createOpenTerm <$> testrules5;
-  goals <- sequence $ lift <$> createOpenTerm <$> testfacts5;
+  kbr <- sequence $ lift <$> createOpenTerm <$> testprogram;
+  goals <- sequence $ lift <$> createOpenTerm <$> testquery;
   (kb', newgoals) <- {--return (kbr, goals);--}propagateProof kbr goals;
+  lift2 $ putStrLn "Goals after propagation:";
+  postgoals <- applyBindingsAll goals;
+  sequence [lift2 $ putStrLn $ oTToString g | g <- postgoals];
+  lift2 $ putStrLn "";
   makeProof kb' newgoals;
   --TODO: here, general rules are not copied yet. Once applied, they are changed in the KB.!
   --TODO! TODO! TODO!
