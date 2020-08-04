@@ -171,8 +171,11 @@ testfacts5 = map stdrd ["a ^ b", "a v b"]
 test5 = runIntBindT $ do {
   kbr <- sequence $ lift <$> createOpenTerm <$> testrules5;
   goals <- sequence $ lift <$> createOpenTerm <$> testfacts5;
-  (kb', newgoals) <- propagateProof kbr goals;
+  (kb', newgoals) <- {--return (kbr, goals);--}propagateProof kbr goals;
   makeProof kb' newgoals;
+  --TODO: here, general rules are not copied yet. Once applied, they are changed in the KB.!
+  --TODO! TODO! TODO!
+  --TODO: also, for general rules, it might need to be the case that the posterior subsumes the goal...not hundret percent sure though.
 }
 
 --returns the proof state (kb and goals) after propagation.
@@ -183,7 +186,13 @@ propagateProof kb goals = do {
       lst <- implLstAgainstGoal impllst goal;
       case lst of
         [] -> fail ("goal " ++ (oTToString goal) ++ "cannot be resolved.")
-        [(_,_,(pres, post))] -> unify post goal >> return pres
+        [(_,_,(pres, post))] -> do {
+                applyBindingsAll (post:pres);
+                lst <- freshenAll (post:pres);
+                case lst of
+                  (post':pres') -> unify goal post' >> return pres'
+                  _ -> fail "should not happen"
+                }
         _ -> return [goal]
     } | goal <- goals];
   if (fromOpenTerm <$> newgoals) == (fromOpenTerm <$> goals)
