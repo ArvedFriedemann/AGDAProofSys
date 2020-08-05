@@ -145,7 +145,7 @@ ppCTerm' (CCONST TOP) = tell "T"
 ppCTerm' (CCONST BOT) = tell "()"
 ppCTerm' (CCONST (CON s)) = tell s
 ppCTerm' (CVAR v) = tell v
-ppCTerm' (CAPPL a b@(CAPPL a' b')) = tell "(" >> ppCTerm' a >> tell ") " >> ppCTerm' b
+ppCTerm' (CAPPL a b@(CAPPL a' b')) = ppCTerm' a >> tell " (" >> ppCTerm' b >> tell ")"
 ppCTerm' (CAPPL a b) = ppCTerm' a >> tell " " >> ppCTerm' b
 
 bindConst :: [String] -> CTerm String -> CTerm String
