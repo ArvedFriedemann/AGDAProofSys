@@ -169,9 +169,9 @@ testrules5 = map stdrd ["a -> b -> (a ^ b)", "a -> (a v b)", "b -> (a v b)"]
 testfacts5 = map stdrd ["a ^ b", "a v b"]
 testprogram = map ((bindConst ["append","[]",":","c"]).stdrd)
   [ "append [] x x",
-   "(append xs y zs) -> (append (x : xs) y (x : zs))"]
+   "(append xs y zs) -> (append (xs : x) y (zs : x))"]
 testquery   = map ((bindConst ["append","[]",":","c"]).stdrd)
-  [ "append (c : c : []) (c : []) x"]
+  [ "append ([] : c : c ) ([] : c) x"]
 
 test5 = runIntBindT $ do {
   kbr <- sequence $ lift <$> createOpenTerm <$> testprogram;
