@@ -1,0 +1,70 @@
+((ab : A -> B) in kb) -> (b : B in q) -> (q' = (q\{B}) U {A}) -> (solve kb q' a) -> (solve kb q (ab a))
+
+TODO: Several things. First: every step and every proof should technically have the capability to end up in the KB, and there needs to be a scheduler telling what does and what doesn't. Also, the time it takes to figure out something also needs to go in there. 
+
+
+
+--The solver should be a deterministic function. 
+
+
+
+
+
+--this is the deterministic version
+
+((a : A) in kb) -> (solve kb A a)
+((a : A) in kb) -> ((ab : A -> B) in kb) -> (solve kb B (ab a))
+
+--nondeterministic version:
+
+(lst : List A) -> ((a : A) in kb -> a in lst) -> foldr (\a y -> (solve kb A a) v y) top lst 
+(lst : List A) -> ((a : A) in kb -> (ab : A -> B) in kb -> (a,ab) in lst) -> foldr (\(a, ab) y -> (solve kb B (ab a)) v y) top lst
+
+--This just claims that the solve predicate is correct.
+
+--determinism:
+(a : A) -> (a' : A) -> a =/= a' -> (solve kb A a) -> (solve kb A a') -> bot
+
+--reflection
+((solve kb A a) in kb) -> (solve kb A a)
+
+--this states that if knowledge about the solver is in a kb, it is applied
+
+--completeness:
+exists (a : A) from kb -> (exists (b : A) st (solve kb A b))
+--TODO...should be linked to correctness or something
+
+
+
+--better correctness:
+((a : A) in kb) -> A deducible from kb with a
+((ab : A -> B) in kb) -> A deducible from kb with a -> B deducible from kb with (ab a)
+
+(solve kb A a) -> A deducible from kb with a
+A deducible from kb with a -> exists b st (solve kb A b)
+
+--this is only for solvers that give a solution if one exists. For solvers that give both directions:
+((A deducible from kb with a) ^ (exists b st (solve kb A (right a') )) ) v 
+  (((exists a st (A deducible from kb with a) -> bot) deducible from kb with b) ^ (solve kb A (left b')) ) 
+
+
+--enhanced reflection
+(solve kb A a) -> (solve kb A a) deducible form kb with k
+(solve kb A a) deducible form kb with k -> (solve kb A a)
+
+--TODO: what about the things that are not yet deducible? This just claims that they eventually are, but there has to be a mechanism that makes sure that if waiting for it doesn't pay off, a guess should be made.
+
+
+
+--speed
+
+
+
+--Here, we can only argue with speed improvement. The maximum is just the implementation that cannot be improved in speed. As this is quantified over all implementations this is a global maximum.
+
+--either the fastest path is known, then take it. Otherwise there is a function that deterministically maps the state of non knowledge to an action. Even these facts exist in the kb, so kb query time is key.
+
+--this needs to assume that access time to a kb is short. kb should be compressed to always uphold that access speed or something. speed is about the solver being reactive. It looks at a finite portion of the state and makes decisions based on it. 
+
+--prolly the solution is to have a (partial) kb that is always completely queried
+
