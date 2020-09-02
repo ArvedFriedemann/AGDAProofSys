@@ -91,6 +91,13 @@ createOpenTerm t = do {
   return $ applyCBinding (zip vars intVars) t
 }
 
+createOpenTerms :: (Monad m) => (Eq a) => [CTerm a] -> IntBindingTT m [OpenTerm]
+createOpenTerms trms = do {
+  vars <- return $ nub $ concatMap nubVars trms;
+  intVars <- sequence $ [freshVar | v <- vars];
+  return $ applyCBinding (zip vars intVars) <$> trms
+}
+
 fromOpenTerm :: OpenTerm -> CTerm IntVar
 fromOpenTerm (UVar i) = CVAR i
 fromOpenTerm (UTerm (CONST c)) = CCONST c
@@ -165,6 +172,7 @@ oTToString t = ppCTerm $ giveNiceIntNames $ fromOpenTerm t
 ----------------------------------
 --testing stuff
 ----------------------------------
+{-
 bounds = ["=","^","->","v"]
 binds = bindConst bounds
 testkb = binds <$> rt <$> ["a = a", "b = b", "(a ^ (a -> b)) -> b"]
@@ -177,7 +185,7 @@ test1 = runIntBind $ do {
   --return $ ppCTerm <$> giveNiceNames <$> fromOpenTerm <$> mts
   return ()
 }
-
+-}
 ----------------------------------
 --parsing
 ----------------------------------
@@ -218,3 +226,13 @@ freshTermFromString :: (Monad m) => String -> IntBindingTT m OpenTerm
 freshTermFromString = freshTermFromString' []
 freshTermFromString' :: (Monad m) => [String] -> String -> IntBindingTT m OpenTerm
 freshTermFromString' bnds s = createOpenTerm $ bindConst bnds $ rt s
+
+
+
+-------------------------------------------------------------
+--Util
+-------------------------------------------------------------
+
+lift2 :: (MonadTrans t1, MonadTrans t2, Monad m, Monad (t2 m)) =>
+          m a -> t1 (t2 m) a
+lift2 = lift.lift

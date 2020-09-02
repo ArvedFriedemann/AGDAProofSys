@@ -1,4 +1,4 @@
-module UnificationFDKBClean where
+module UnificationFDKBCleaned where
 
 import UnificationFDApproach
 import Control.Unification
@@ -20,8 +20,14 @@ cpost (_, post) = post
 clauseToList :: Clause -> [OpenTerm]
 clauseToList (lst, p) = p:lst
 
+clauseToBWList :: Clause -> [OpenTerm]
+clauseToBWList (lst, p) = lst++[p]
+
 listToClause :: [OpenTerm] -> Clause
 listToClause (x:xs) = (xs, x)
+
+clauseToString :: Clause -> String
+clauseToString c = concat $ intersperse "->" (((\x -> "("++x++")").oTToString) <$> (clauseToBWList c))
 
 transformAsListM :: (Monad m) => ([OpenTerm] -> m [OpenTerm]) -> Clause -> m Clause
 transformAsListM fkt c = do {
@@ -68,6 +74,26 @@ propagateProof kb goals = do {
   else return goals
 }
 
+interactiveProof' :: KB -> [OpenTerm] -> IntBindMonT IO [OpenTerm]
+interactiveProof' kb goals = do {
+  lift2 $ putStrLn "KB:";
+  lift2 $ sequence $ (putStrLn.clauseToString) <$> kb;
+  lift2 $ putStrLn "Goals:";
+  lift2 $ sequence $ (putStrLn.oTToString) <$> goals;
+
+  possibilities <- concat <$> (sequence [backwardPossibilities kb g | g <- goals]);
+  possibClauses <- return $ fst <$> possibilities;
+  possibActions <- return $ snd <$> possibilities;
+
+  lift2 $ putStrLn "Steps:";
+  lift2 $ sequence [putStrLn $ "("++(show i)++") "++(clauseToString c) | (i,c) <- zip [0..] possibClauses];
+
+
+  return goals --TODO!
+}
+
+
+
 allSucceeding :: (Monad m) => [IntBindMonT m a] -> IntBindMonT m [a]
 allSucceeding mons = (map fst) <$> possibleActions mons
 
@@ -78,6 +104,7 @@ possibleActions acts = concat <$> (sequence [lookoutCatch ((\r -> (r, m)) <$> m)
 isSingleton :: [a] -> Bool
 isSingleton [x] = True
 isSingleton _   = False
+
 
 {-
 Problems:

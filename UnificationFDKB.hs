@@ -260,7 +260,3 @@ makeProofOld' kb goal = do {
   --lift2 $ putStrLn "TADAAA!";
   return ()
 }
-
-lift2 :: (MonadTrans t1, MonadTrans t2, Monad m, Monad (t2 m)) =>
-          m a -> t1 (t2 m) a
-lift2 = lift.lift
