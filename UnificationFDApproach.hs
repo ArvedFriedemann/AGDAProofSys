@@ -69,6 +69,10 @@ lookout m = do {
   return r
 }
 
+--like lookout, but returning a value if there is one.
+lookoutCatch :: (Monad m) => IntBindMonT m a -> IntBindMonT m [a]
+lookoutCatch m = lookout $ catchE (return <$> m) (const $ return [])
+
 freshVar :: (Monad m) => IntBindingTT m OpenTerm
 freshVar = UVar <$> freeVar
 

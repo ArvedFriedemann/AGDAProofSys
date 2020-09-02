@@ -90,9 +90,6 @@ splitSucceeding fkt ts = do {
   return (lefts e, rights e)
 }
 
-lookoutCatch :: (Monad m) => IntBindMonT m a -> IntBindMonT m [a]
-lookoutCatch m = lookout $ catchE (return <$> m) (const $ return [])
-
 --tries out every action (always backtracking to the original state) and returns the action paired with the result they'd give. A generalised lookout or allSucceeding. BACKTRACKS IN ALL CASES!
 possibleActions:: (Monad m) => [IntBindMonT m a] -> IntBindMonT m [(a,IntBindMonT m a)]
 possibleActions acts = concat <$> (sequence [lookoutCatch ((\r -> (r, m)) <$> m) | m <- acts])
