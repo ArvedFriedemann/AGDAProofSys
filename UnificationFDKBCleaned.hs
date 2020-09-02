@@ -71,6 +71,16 @@ propagateProof kb goals = do {
   else return goals
 }
 
+interactiveProof'' :: KB -> [OpenTerm] -> IntBindMonT IO [OpenTerm]
+interactiveProof'' kb goals = do {
+  if null goals
+  then do {
+    lift2 $ putStrLn "Congratulations! All goals fulfilled!";
+    return []
+  }
+  else interactiveProof' kb goals
+}
+
 interactiveProof' :: KB -> [OpenTerm] -> IntBindMonT IO [OpenTerm]
 interactiveProof' kb goals = do {
   lift2 $ putStrLn "KB:";
@@ -79,26 +89,31 @@ interactiveProof' kb goals = do {
   lift2 $ sequence $ (putStrLn.oTToString) <$> goals;
 
   possByGoal   <- zip goals <$> (sequence [backwardPossibilities kb g | g <- goals]);
-  possibilities <- return $ concat (snd <$> possByGoal) ;
-  possibClauses <- return $ fst <$> possibilities;
-  possibActions <- return $ snd <$> possibilities;
+  case find (\(g,poss) -> null poss) possByGoal of
+    Just (g,poss) -> do {
+      lift2 $ putStrLn $ "goal (" ++ (oTToString g) ++ ") unprovable";
+      fail "unprovalbe"}
+    Nothing -> do {
+      possibilities <- return $ concat (snd <$> possByGoal);
+      possibClauses <- return $ fst <$> possibilities;
+      possibActions <- return $ snd <$> possibilities;
 
-  lift2 $ putStrLn "Steps:";
-  lift2 $ sequence [putStrLn $ "("++(show i)++") "++(clauseToString c) | (i,c) <- zip [0..] possibClauses];
+      lift2 $ putStrLn "Steps:";
+      lift2 $ sequence [putStrLn $ "("++(show i)++") "++(clauseToString c) | (i,c) <- zip [0..] possibClauses];
 
-  idx <- lift2 $ readLn;
-  if 0 <= idx && idx < (length possibilities)
-  then do {
-    --first snd is for the map, second for the action (it comes attached with a clause for output)
-    (prems, post) <- snd $ snd $ pickFromMap possByGoal idx;
-    interactiveProof' kb $ prems++(map fst $ removeIdx possByGoal idx)
-  };
-  else do {
-    lift2 $ putStrLn "Invalid Index...";
-    interactiveProof' kb goals
-  };
+      idx <- lift2 $ readLn;
+      if 0 <= idx && idx < (length possibilities)
+      then do {
+        --first snd is for the map, second for the action (it comes attached with a clause for output)
+        (prems, post) <- snd $ snd $ pickFromMap possByGoal idx;
+        interactiveProof'' kb $ prems++(map fst $ removeIdx possByGoal idx)
+      };
+      else do {
+        lift2 $ putStrLn "Invalid Index...";
+        interactiveProof'' kb goals
+      };
 
-  return goals --TODO!
+    }
 }
 
 

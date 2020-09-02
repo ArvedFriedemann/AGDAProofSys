@@ -8,7 +8,7 @@ import Control.Monad
 
 type StringKB = [[String]]
 
-bounds = ["=","^","->","v"]
+bounds = ["=","^","->","v","bot"]
 binds = bindConst bounds
 stdrd = binds.rt
 
@@ -27,5 +27,5 @@ stdTest strkb goaltrm = runIntBindT $ do {
   void $ interactiveProof' kb [goal]
 }
 
-testkb1 = [["a","a v b"],["b", "a v b"]]
+testkb1 = [["a","a v b"],["b", "a v b"], ["bot", "a"]]
 testgoal1 = "a v b"
