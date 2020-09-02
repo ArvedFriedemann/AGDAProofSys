@@ -6,6 +6,7 @@ import Control.Unification.Types
 import Control.Unification.IntVar
 import Control.Monad.Trans
 import Control.Monad.Trans.Except
+import Control.Monad
 import Data.List
 
 type Clause = ([OpenTerm], OpenTerm)
@@ -36,6 +37,11 @@ transformAsListM fkt c = do {
 matchClause :: (Monad m) => OpenTerm -> Clause -> IntBindMonT m Clause
 matchClause goal clause = do {
   newclause@(newgoals, post) <- transformAsListM freshenAll clause;
+  --
+  unify post goal;
+  transformAsListM applyBindingsAll newclause
+  --
+  {-
   subs <- subsumes post goal;
   if subs
   then do {
@@ -43,7 +49,7 @@ matchClause goal clause = do {
     transformAsListM applyBindingsAll newclause
   }
   else (lift freeVar) >>= (\vd -> throwE (occursFailure vd goal)) --TODO: again, super hacky
-
+  -}
 }
 
 --gives for a goal all possible new branches with goals, the new assignment and the action for when taking the branch.
@@ -71,14 +77,24 @@ propagateProof kb goals = do {
   else return goals
 }
 
+--returns the original goals!
+interactiveProof :: KB -> [OpenTerm] -> IntBindMonT IO ()
+interactiveProof kb goals = do {
+  interactiveProof'' kb goals;
+  lift2 $ putStrLn "Initial Goals:";
+  goals' <- applyBindingsAll goals;
+  void $ lift2 $ sequence [putStrLn $ oTToString g | g <- goals']
+}
+
 interactiveProof'' :: KB -> [OpenTerm] -> IntBindMonT IO [OpenTerm]
 interactiveProof'' kb goals = do {
-  if null goals
+  goals' <- propagateProof kb goals;
+  if null goals'
   then do {
     lift2 $ putStrLn "Congratulations! All goals fulfilled!";
     return []
   }
-  else interactiveProof' kb goals
+  else interactiveProof' kb goals'
 }
 
 interactiveProof' :: KB -> [OpenTerm] -> IntBindMonT IO [OpenTerm]
