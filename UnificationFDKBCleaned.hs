@@ -18,16 +18,13 @@ cpost :: Clause -> OpenTerm
 cpost (_, post) = post
 
 clauseToList :: Clause -> [OpenTerm]
-clauseToList (lst, p) = p:lst
-
-clauseToBWList :: Clause -> [OpenTerm]
-clauseToBWList (lst, p) = lst++[p]
+clauseToList (lst, p) = lst++[p]
 
 listToClause :: [OpenTerm] -> Clause
-listToClause (x:xs) = (xs, x)
+listToClause lst = (init lst, last lst)
 
 clauseToString :: Clause -> String
-clauseToString c = concat $ intersperse "->" (((\x -> "("++x++")").oTToString) <$> (clauseToBWList c))
+clauseToString c = concat $ intersperse "->" (((\x -> "("++x++")").oTToString) <$> (clauseToList c))
 
 transformAsListM :: (Monad m) => ([OpenTerm] -> m [OpenTerm]) -> Clause -> m Clause
 transformAsListM fkt c = do {
@@ -81,13 +78,25 @@ interactiveProof' kb goals = do {
   lift2 $ putStrLn "Goals:";
   lift2 $ sequence $ (putStrLn.oTToString) <$> goals;
 
-  possibilities <- concat <$> (sequence [backwardPossibilities kb g | g <- goals]);
+  possByGoal   <- zip goals <$> (sequence [backwardPossibilities kb g | g <- goals]);
+  possibilities <- return $ concat (snd <$> possByGoal) ;
   possibClauses <- return $ fst <$> possibilities;
   possibActions <- return $ snd <$> possibilities;
 
   lift2 $ putStrLn "Steps:";
   lift2 $ sequence [putStrLn $ "("++(show i)++") "++(clauseToString c) | (i,c) <- zip [0..] possibClauses];
 
+  idx <- lift2 $ readLn;
+  if 0 <= idx && idx < (length possibilities)
+  then do {
+    --first snd is for the map, second for the action (it comes attached with a clause for output)
+    (prems, post) <- snd $ snd $ pickFromMap possByGoal idx;
+    interactiveProof' kb $ prems++(map fst $ removeIdx possByGoal idx)
+  };
+  else do {
+    lift2 $ putStrLn "Invalid Index...";
+    interactiveProof' kb goals
+  };
 
   return goals --TODO!
 }
@@ -105,7 +114,17 @@ isSingleton :: [a] -> Bool
 isSingleton [x] = True
 isSingleton _   = False
 
+pickFromMap :: [(a,[b])] -> Int -> (a,b)
+pickFromMap [] i = error "invalid index"
+pickFromMap ((a,lst):xs) i = if i < (length lst)
+                              then (a,lst !! i)
+                              else pickFromMap xs (i - (length lst))
 
+removeIdx :: [(a,[b])] -> Int -> [(a,[b])]
+removeIdx [] _ = []
+removeIdx ((a,lst):xs) i = if i < (length lst)
+                              then xs
+                              else (a,lst) : (removeIdx xs (i - (length lst)) )
 {-
 Problems:
 original idea was to have a goal with constrained variables and then find a path through the KB. This path is the proof. Technically, KB should be enhanceable during the proof. Problem: search should depend on the whole available knowledge, not just one goal.

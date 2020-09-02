@@ -26,6 +26,6 @@ stdTest strkb goaltrm = runIntBindT $ do {
   kb <- lift $ stdkb strkb;
   void $ interactiveProof' kb [goal]
 }
---warning: list to clause has the posterior first!
-testkb1 = [["a v b","a"],["a v b","b"]]
+
+testkb1 = [["a","a v b"],["b", "a v b"]]
 testgoal1 = "a v b"
