@@ -57,6 +57,7 @@ backwardPossibilities :: (Monad m) => KB -> OpenTerm -> IntBindMonT m [(Clause, 
 backwardPossibilities kb goal = possibleActions [matchClause goal c | c <- kb]
 
 --propagates all goals that have only a single rule match. Returns the next list of goals (they could be further propagated). Also returns whether anything has changed at all.
+--For safety, this only propagates the first singletonian! (they sometimes interfere when conflict arises)
 propagateProofStep' :: (Monad m) => KB -> [OpenTerm] -> IntBindMonT m ([OpenTerm],Bool)
 propagateProofStep' kb goals = do {
   branches <- zip goals <$> (sequence $ [backwardPossibilities kb g | g <- goals]);
@@ -64,8 +65,13 @@ propagateProofStep' kb goals = do {
   multitonGoals <- return $ fst <$> multitons;
   singletonGoals <- return $ fst <$> singletons;
   singletonActions <- return $ (snd <$> (head <$> (snd <$> singletons)));
-  newclauses <- sequence $ singletonActions;
-  return $ ((concat $ cprem <$> newclauses) ++ (multitonGoals), (not.null) singletons);
+  if not $ null singletons
+  then do {
+    --this ensures that only one singleton goal is applied at a time (better for conflict handling)
+    newclause <- head $ singletonActions;
+    return ((cprem newclause) ++ (tail singletonGoals) ++ multitonGoals, True)
+  }
+  else return (multitonGoals, False)
 }
 
 --propagates the proof until no further steps can be made

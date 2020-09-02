@@ -37,4 +37,4 @@ testkb2 = [ ["append [] y y"],
             ["append xs y ys","append (xs : x) y (ys : x)"],
             ["length [] zero"],
             ["length xs i", "length (xs : x) (suc i)"]]
-testgoal2 = ["append ([] : b : a) ([] : a) x", "length x (suc (suc (suc zero)))"]
+testgoal2 = ["append ([] : b : a) ([] : a) x", "length x (suc (suc zero))"]
