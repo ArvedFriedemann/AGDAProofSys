@@ -8,8 +8,8 @@ import Control.Monad
 
 type StringKB = [[String]]
 
-bounds = ["=","^","->","v","bot", ":","[]", "append", "length", "zero", "suc"]
-binds = bindConst bounds
+bounds = ["=","^","->","v","bot", ":","[]", "append", "length", "zero", "suc", "list"]
+binds = (bindConstTo [("=",EQT),("->",IMPL)]).(bindConst bounds)
 stdrd = binds.rt
 
 stdcrt :: (Monad m) => String -> IntBindMonT m OpenTerm
@@ -37,4 +37,11 @@ testkb2 = [ ["append [] y y"],
             ["append xs y ys","append (xs : x) y (ys : x)"],
             ["length [] zero"],
             ["length xs i", "length (xs : x) (suc i)"]]
-testgoal2 = ["append ([] : b : a) ([] : a) x", "length x (suc (suc zero))"]
+testgoal2 = ["append ([] : b : a) ([] : a) x", "length x y"]
+
+testkb3 = [ ["x = x"],
+            ["length [] zero"],
+            ["length xs i", "length (xs : x) (suc i)"],
+            ["list []"],
+            ["list xs", "list (xs : x)"]]
+testgoal3 = ["list a", "list b", "a = b"]

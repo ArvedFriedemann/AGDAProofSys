@@ -17,7 +17,7 @@ import Safe
 
 import Text.Parsec hiding (spaces)
 
-data Constant = TOP | BOT | CON String deriving (Show, Eq)
+data Constant = TOP | BOT | EQT | IMPL | CON String deriving (Show, Eq)
 data Term a = CONST Constant
             | APPL a a
   deriving (Show, Eq, Functor, Foldable, Traversable)
@@ -53,9 +53,9 @@ appl :: OpenTerm -> OpenTerm -> OpenTerm
 appl a b = UTerm (APPL a b)
 
 --TODO! This should be a foldl, not foldr! WARNING!
-list :: [OpenTerm] -> OpenTerm
-list [] = UTerm (CONST TOP)
-list ls = foldl1 (\x y -> UTerm (APPL x y)) ls
+olist :: [OpenTerm] -> OpenTerm
+olist [] = UTerm (CONST TOP)
+olist ls = foldl1 (\x y -> UTerm (APPL x y)) ls
 
 clst :: [CTerm a] -> CTerm a
 clst [] = CCONST BOT
@@ -71,7 +71,11 @@ lookout m = do {
 
 --like lookout, but returning a value if there is one.
 lookoutCatch :: (Monad m) => IntBindMonT m a -> IntBindMonT m [a]
-lookoutCatch m = lookout $ catchE (return <$> m) (const $ return [])
+lookoutCatch m = lookout $ catch m
+
+--wraps the value into a list in case it cannot be created
+catch :: (Monad m) => IntBindMonT m a -> IntBindMonT m [a]
+catch m = catchE (return <$> m) (const $ return [])
 
 freshVar :: (Monad m) => IntBindingTT m OpenTerm
 freshVar = UVar <$> freeVar
@@ -154,17 +158,25 @@ ppCTerm t = execWriter $ ppCTerm' t
 ppCTerm' :: CTerm String -> Writer String ()
 ppCTerm' (CCONST TOP) = tell "T"
 ppCTerm' (CCONST BOT) = tell "()"
+ppCTerm' (CCONST EQT) = tell "="
+ppCTerm' (CCONST IMPL) = tell "->"
 ppCTerm' (CCONST (CON s)) = tell s
 ppCTerm' (CVAR v) = tell v
 ppCTerm' (CAPPL a b@(CAPPL a' b')) = ppCTerm' a >> tell " (" >> ppCTerm' b >> tell ")"
 ppCTerm' (CAPPL a b) = ppCTerm' a >> tell " " >> ppCTerm' b
 
 bindConst :: [String] -> CTerm String -> CTerm String
-bindConst bnds (CCONST c) = CCONST c
-bindConst bnds (CVAR x)
-    | x `elem` bnds = CCONST (CON x)
-    | otherwise = CVAR x
-bindConst bnds (CAPPL a b) = CAPPL (bindConst bnds a) (bindConst bnds b)
+bindConst lst = bindConstTo ((\x -> (x, CON x)) <$> lst)
+
+bindConstTo :: [(String,Constant)] -> CTerm String -> CTerm String
+bindConstTo bnds (CCONST (CON s)) = case lookup s bnds of
+                                      Just c' -> CCONST c'
+                                      Nothing -> CCONST (CON s)
+bindConstTo bnds (CCONST c) = CCONST c
+bindConstTo bnds (CVAR x) = case lookup x bnds of
+                              Just c' -> CCONST c'
+                              Nothing -> CVAR x
+bindConstTo bnds (CAPPL a b) = CAPPL (bindConstTo bnds a) (bindConstTo bnds b)
 
 oTToString :: OpenTerm -> String
 oTToString t = ppCTerm $ giveNiceIntNames $ fromOpenTerm t

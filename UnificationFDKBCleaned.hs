@@ -74,10 +74,32 @@ propagateProofStep' kb goals = do {
   else return (multitonGoals, False)
 }
 
+--filters the list of goals by goals declaring an equality and unifies them. Returns whether any occurred.
+unifyEQGoals :: (Monad m) => [OpenTerm] -> IntBindMonT m Bool
+unifyEQGoals trms = do {
+  matches <- concat <$> (allSucceeding $ (matchBinConst EQT) <$> trms);
+  sequence $ (uncurry unify) <$> matches;
+  return $ (not.null) matches
+}
+
+
+--checks if the given term is a left-associative binary operator of the given constnat. If that is the case it returns the two arguments. Does not apply the bindings!
+matchBinConst :: (Monad m) => Constant -> OpenTerm -> IntBindMonT m [(OpenTerm,OpenTerm)]
+matchBinConst cst term = catch (do {
+                                  a <- lift $ freshVar;
+                                  b <- lift $ freshVar;
+                                  ot <- return $ olist [a, con cst, b];
+                                  unify ot term;
+                                  return (a,b)
+                                })
+
 --propagates the proof until no further steps can be made
 propagateProof :: (Monad m) => KB -> [OpenTerm] -> IntBindMonT m [OpenTerm]
 propagateProof kb goals = do {
   (goals', hasChanged) <- propagateProofStep' kb goals;
+  --too hacky. Equality should just be modeled using the axiom a = a.
+  --hasChangedEQ <- unifyEqGoals goals';
+  --goals'' <- filterM (null <$> (matchBinConst EQT)) goals'
   if hasChanged
   then propagateProof kb goals'
   else return goals
@@ -108,7 +130,8 @@ interactiveProof' kb goals = do {
   lift2 $ putStrLn "KB:";
   lift2 $ sequence $ (putStrLn.clauseToString) <$> kb;
   lift2 $ putStrLn "Goals:";
-  lift2 $ sequence $ (putStrLn.oTToString) <$> goals;
+  goalsAppl <- applyBindingsAll goals;
+  lift2 $ sequence $ (putStrLn.oTToString) <$> goalsAppl;
 
   possByGoal   <- zip goals <$> (sequence [backwardPossibilities kb g | g <- goals]);
   case find (\(g,poss) -> null poss) possByGoal of
