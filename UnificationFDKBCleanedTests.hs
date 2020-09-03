@@ -8,10 +8,7 @@ import Control.Monad
 
 type StringKB = [[String]]
 
-bounds = ["=","^","->","v","bot", ":","[]", "append", "length", "zero", "suc", "list",
-          "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-
-binds = (bindConstTo [("=",EQT),("->",IMPL)]).(bindConst bounds)
+binds = (bindConstTo [("=",EQT),("->",IMPL), ("()", BOT),("bot", BOT)]).(bindConst bounds)
 stdrd = binds.rt
 
 stdcrt :: (Monad m) => String -> IntBindMonT m OpenTerm
@@ -32,6 +29,10 @@ stdTest strkb goaltrms = runIntBindT $ do {
   interactiveProof kb goals
 }
 
+bounds = ["=","^","->","v","bot", ":","[]",
+          "append", "length", "zero", "suc", "list", "alldiff",
+          "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
 testkb1 = [["a","a v b"],["b", "a v b"], ["bot", "a"]]
 testgoal1 = ["a v b"]
 
@@ -48,4 +49,13 @@ testkb3 = [ ["x = x"],
             ["list xs", "list (xs : x)"]]
 testgoal3 = ["list a", "list b", "a = b"]
 
---testMiniSudokuKB = []
+--and this is why we need proper negation...or something like it.
+testMiniSudokuKB = [["x = x"],
+                    ["1 = 2","bot"],
+                    ["1 = 3","bot"],
+                    ["2 = 1","bot"],
+                    ["2 = 3","bot"],
+                    ["3 = 1","bot"],
+                    ["3 = 2","bot"],
+                    ["alldiff ..."]]
+                    --TODO: this is a pain in the !@£$ without the ability to derive UNPROOF or implications
