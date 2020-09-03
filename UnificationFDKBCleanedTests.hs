@@ -8,7 +8,9 @@ import Control.Monad
 
 type StringKB = [[String]]
 
-bounds = ["=","^","->","v","bot", ":","[]", "append", "length", "zero", "suc", "list"]
+bounds = ["=","^","->","v","bot", ":","[]", "append", "length", "zero", "suc", "list",
+          "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+
 binds = (bindConstTo [("=",EQT),("->",IMPL)]).(bindConst bounds)
 stdrd = binds.rt
 
@@ -45,3 +47,5 @@ testkb3 = [ ["x = x"],
             ["list []"],
             ["list xs", "list (xs : x)"]]
 testgoal3 = ["list a", "list b", "a = b"]
+
+--testMiniSudokuKB = []

@@ -137,14 +137,18 @@ interactiveProof' kb goals = do {
   case find (\(g,poss) -> null poss) possByGoal of
     Just (g,poss) -> do {
       lift2 $ putStrLn $ "goal (" ++ (oTToString g) ++ ") unprovable";
-      fail "unprovalbe"}
+      fail "unprovable"}
     Nothing -> do {
       possibilities <- return $ concat (snd <$> possByGoal);
       possibClauses <- return $ fst <$> possibilities;
       possibActions <- return $ snd <$> possibilities;
 
       lift2 $ putStrLn "Steps:";
-      lift2 $ sequence [putStrLn $ "("++(show i)++") "++(clauseToString c) | (i,c) <- zip [0..] possibClauses];
+      sequence [do {
+            g' <- applyBindings g;
+            lift2 $ putStrLn $ "goal (" ++ (oTToString g')++"): ";
+            lift2 $ sequence [putStrLn $ "("++(show i)++") "++(clauseToString $ fst c) | (i,c) <- zip [start..end] brchs]}
+        | (g,brchs, start, end) <- giveIdxRange possByGoal];
 
       idx <- lift2 $ readLn;
       if 0 <= idx && idx < (length possibilities)
@@ -185,6 +189,14 @@ removeIdx [] _ = []
 removeIdx ((a,lst):xs) i = if i < (length lst)
                               then xs
                               else (a,lst) : (removeIdx xs (i - (length lst)) )
+
+giveIdxRange :: [(a,[b])] -> [(a,[b],Int,Int)]
+giveIdxRange mp = giveIdxRange' 0 mp
+
+giveIdxRange' :: Int -> [(a,[b])] -> [(a,[b],Int,Int)]
+giveIdxRange' oneHigher [] = []
+giveIdxRange' oneHigher ((a,lst):xs) = (a,lst,oneHigher,oneHigher + (length lst) - 1) :
+                                        (giveIdxRange' (oneHigher + (length lst)) xs)
 {-
 Problems:
 original idea was to have a goal with constrained variables and then find a path through the KB. This path is the proof. Technically, KB should be enhanceable during the proof. Problem: search should depend on the whole available knowledge, not just one goal.
