@@ -29,10 +29,6 @@ stdTest strkb goaltrms = runIntBindT $ do {
   interactiveProof kb goals
 }
 
-bounds = ["=","^","->","v","bot", ":","[]",
-          "append", "length", "zero", "suc", "list", "alldiff",
-          "1", "2", "3", "4", "5", "6", "7", "8", "9"]
-
 testkb1 = [["a","a v b"],["b", "a v b"], ["bot", "a"]]
 testgoal1 = ["a v b"]
 
@@ -49,13 +45,45 @@ testkb3 = [ ["x = x"],
             ["list xs", "list (xs : x)"]]
 testgoal3 = ["list a", "list b", "a = b"]
 
---and this is why we need proper negation...or something like it.
-testMiniSudokuKB = [["x = x"],
-                    ["1 = 2","bot"],
-                    ["1 = 3","bot"],
-                    ["2 = 1","bot"],
-                    ["2 = 3","bot"],
-                    ["3 = 1","bot"],
-                    ["3 = 2","bot"],
-                    ["alldiff ..."]]
-                    --TODO: this is a pain in the !@£$ without the ability to derive UNPROOF or implications
+
+bounds = ["=","->","^","v","bot",":","[]",
+          "append", "length", "zero", "suc", "list",
+          "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
+          "1","2","3","4","5","6","7","8","9"]
+
+testkblang = [["subject (the car)"],
+              ["subject (the moth)"],
+              ["object (the person)"],
+              ["predicate (carries)"],
+              ["subject A","predicate B", "object C","sentence (A B C)"],
+              ["subject B","predicate A", "object C","question (A B C)"]]
+testlanggoal = ["question (X Y Z)"]
+
+testkbsudoku = [["x = x"],
+                ["member_rem A (AS : A) AS"],
+                ["member_rem A XS XS'","member_rem A (XS : X) (XS' : X)"],
+                ["permut [] []"],
+                ["member_rem x ys ys'","permut ys' xs","permut ys (xs : x)"],
+                ["p = ([] : 1 : 2 : 3 : 4 : 5 : 6 : 7 : 8 : 9)",
+                  "permut p ([] : x11 : x12 : x13)",
+                  "permut p ([] : x21 : x22 : x23)",
+                  "permut p ([] : x31 : x32 : x33)",
+                  "permut p ([] : x11 : x21 : x31)",
+                  "permut p ([] : x12 : x22 : x32)",
+                  "permut p ([] : x13 : x23 : x33)",
+                  "permut p ([] : x11 : x12 : x13 : x21 : x22 : x23 : x31 : x32 : x33)",
+                  "sudoku (x11 x12 x13 x21 x22 x23 x31 x32 x33)"]]
+testsudokugoal = ["sudoku (x11 x12 x13 x21 x22 x23 x31 x32 x33)"]
+
+testkbsudokusmall = [["x = x"],
+                      ["member_rem A (AS : A) AS"],
+                      ["member_rem A XS XS'","member_rem A (XS : X) (XS' : X)"],
+                      ["permut [] []"],
+                      ["member_rem x ys ys'","permut ys' xs","permut ys (xs : x)"],
+                      ["p = ([] : 1 : 2)",
+                        "permut p ([] : x11 : x12)",
+                        "permut p ([] : x21 : x22)",
+                        "permut p ([] : x11 : x21)",
+                        "permut p ([] : x21 : x22)",
+                        "sudoku (x11 x12 x21 x22)"]]
+testsudokugoalsmall = ["sudoku (x11 x12 x21 x22)"]
