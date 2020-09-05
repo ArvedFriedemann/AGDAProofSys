@@ -77,21 +77,31 @@ propagateProofStep' kb goals = do {
 --filters the list of goals by goals declaring an equality and unifies them. Returns whether any occurred.
 unifyEQGoals :: (Monad m) => [OpenTerm] -> IntBindMonT m Bool
 unifyEQGoals trms = do {
-  matches <- concat <$> (allSucceeding $ (matchBinConst EQT) <$> trms);
+  matches <- allSucceeding $ (matchBinConst EQT) <$> trms;
   sequence $ (uncurry unify) <$> matches;
   return $ (not.null) matches
 }
 
 
 --checks if the given term is a left-associative binary operator of the given constnat. If that is the case it returns the two arguments. Does not apply the bindings!
-matchBinConst :: (Monad m) => Constant -> OpenTerm -> IntBindMonT m [(OpenTerm,OpenTerm)]
-matchBinConst cst term = catch (do {
-                                  a <- lift $ freshVar;
-                                  b <- lift $ freshVar;
-                                  ot <- return $ olist [a, con cst, b];
-                                  unify ot term;
-                                  return (a,b)
-                                })
+matchBinConst :: (Monad m) => Constant -> OpenTerm -> IntBindMonT m (OpenTerm,OpenTerm)
+matchBinConst cst term = do {
+                              a <- lift $ freshVar;
+                              b <- lift $ freshVar;
+                              ot <- return $ olist [a, con cst, b];
+                              unify ot term;
+                              return (a,b)
+                            }
+
+matchBinConstLAssocList :: (Monad m) => Constant -> OpenTerm -> IntBindMonT m [OpenTerm]
+matchBinConstLAssocList cst term = catchE (do {
+  (a,b) <- matchBinConst cst term;
+  lst <- matchBinConstLAssocList cst a;
+  return $ lst ++ [b];
+}) (const $ return [term])
+
+matchClauseStructure :: (Monad m) => OpenTerm -> IntBindMonT m Clause
+matchClauseStructure trm = listToClause <$> (matchBinConstLAssocList IMPL trm)
 
 --propagates the proof until no further steps can be made
 propagateProof :: (Monad m) => KB -> [OpenTerm] -> IntBindMonT m [OpenTerm]
