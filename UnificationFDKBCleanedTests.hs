@@ -8,7 +8,7 @@ import Control.Monad
 
 type StringKB = [[String]]
 
-binds = (bindConstTo [("=",EQT),("->",IMPL), ("()", BOT),("bot", BOT)]).(bindConst bounds)
+binds = (bindConstTo [("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT)]).(bindConst bounds)
 stdrd = binds.rt
 
 stdcrt :: (Monad m) => String -> IntBindMonT m OpenTerm
