@@ -35,6 +35,7 @@ transformAsListM fkt c = do {
 
 --copies the clause terms, matches them and returns the assigned clauses
 matchClause :: (Monad m) => OpenTerm -> Clause -> IntBindMonT m Clause
+--matchClause (UTerm (CONST BOT)) clause = do { TODO: if bot were treated special, this is where it went}
 matchClause goal clause = do {
   newclause@(newgoals, post) <- transformAsListM freshenAll clause;
   --

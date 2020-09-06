@@ -47,7 +47,7 @@ testgoal3 = ["list a", "list b", "a = b"]
 
 
 bounds = ["=","->","^","v","bot",":","[]",
-          "append", "length", "zero", "suc", "list",
+          "append", "length", "zero", "suc", "list", "consteq"
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "1","2","3","4","5","6","7","8","9"]
 
@@ -87,3 +87,25 @@ testkbsudokusmall = [["x = x"],
                         "permut p ([] : x21 : x22)",
                         "sudoku (x11 x12 x21 x22)"]]
 testsudokugoalsmall = ["sudoku (x11 x12 x21 x22)"]
+
+
+--easy solution: propagate equalities in KBs. Valid eqs vanish, invalid ones deduce bot.
+--or...to avoid propagation...just have special behaviour when bot is active...so that possibilities suddenly are failing facts...as of now these are onlz failing equalities.
+--put that into the backwards possibilities...
+--any kind of implication then solved with KB modification.
+
+--this is an example of how a finer equality can be achieved. With the consteq predicate, a more primitive form of equality allows for derivations of bot. Only problem with this approach is that the consteq predicate is best created on the fly...
+testIneqKB = [["constant true"],
+              ["constant false"],
+              ["constant ="], --and so on..should be done on the fly...
+              ["constant (a b)", "bot"], --this holds because a constant is never a compound
+              --general idea of equality
+              ["A = C", "B = D","(A B) = (C D)"], --generally important rule...
+              ["constant A","constant B", "consteq A B", "A = B"],
+              --rule for consteq
+              ["consteq y x","consteq x y"], --this holds to ease writing
+              ["consteq true false", "bot"], --and so on and so forth.
+              ["consteq true =", "bot"],
+              []] -- ...
+--WARNING: (consteq x y) -> bot can only be used for backward reasoning iff there is a finite number of constants. in other cases, prolly new constants would need to be allowed creating...
+testIneqGoal = ["(true = false) -> bot"]
