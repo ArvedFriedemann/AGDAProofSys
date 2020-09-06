@@ -8,7 +8,7 @@ import Control.Monad
 
 type StringKB = [[String]]
 
-binds = (bindConstTo [("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT)]).(bindConst bounds)
+binds = (bindConstTo [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT)]).(bindConst bounds)
 stdrd = binds.rt
 
 stdcrt :: (Monad m) => String -> IntBindMonT m OpenTerm
@@ -31,7 +31,8 @@ stdTest strkb goaltrms = runIntBindT $ do {
 
 bounds = ["=","->","^","v","bot",":","[]",
           "append", "length", "zero", "suc",
-          "solve", "deduce", "from", "with", "in", "as","conjunction", "is"]
+          "solve", "deduce", "from", "with", "in", "as","conjunction", "is",
+          "improvable", "because"]
 
 reflTestKB = [["x = x"],
               ["x in x"],
@@ -58,3 +59,24 @@ Initial Goals:
 z3 ^ (z3 -> z4) = (z3 ^ (z3 -> z4))
 deduce z4 from (z3 ^ (z3 -> z4)) with (c9 d2)
 -}
+
+--TODO: Maybe make a special Goal IMPROV that is fulfilled when there are no steps left
+reflTestKB2 = [["x = x"],
+                ["(A in kb) improvable from kb because p'",
+                  "((B -> A) deducible from kb with pba) ->
+                      (B as conjunction is implconj) ->
+                      (implconj improvable form kb because pprem)",
+                  "A improvable from kb because p"],
+                ["A improvable from kb because pa",
+                  "B improvable from kb because pb",
+                    "(A v B) improvable from kb because p"],
+                ["A improvable from kb because pa",
+                    "(A ^ B) improvable from kb because p"],
+                ["B improvable from kb because pa",
+                    "(A ^ B) improvable from kb because p"],
+
+              --[]
+            ]
+
+reflTestGoal2 = ["kb = (A ^ (A -> B))",
+                "deduce B from kb with proof"]

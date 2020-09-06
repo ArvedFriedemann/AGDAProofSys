@@ -17,7 +17,7 @@ import Safe
 
 import Text.Parsec hiding (spaces)
 
-data Constant = TOP | BOT | EQT | IMPL | CONJ | DISJ | CON String deriving (Show, Eq)
+data Constant = TOP | BOT | NEQ | EQT | IMPL | CONJ | DISJ | CON String deriving (Show, Eq)
 data Term a = CONST Constant
             | APPL a a
   deriving (Show, Eq, Functor, Foldable, Traversable)
@@ -159,6 +159,7 @@ ppCTerm' :: CTerm String -> Writer String ()
 ppCTerm' (CCONST TOP) = tell "T"
 ppCTerm' (CCONST BOT) = tell "()"
 ppCTerm' (CCONST EQT) = tell "="
+ppCTerm' (CCONST NEQ) = tell "/="
 ppCTerm' (CCONST IMPL) = tell "->"
 ppCTerm' (CCONST CONJ) = tell "^"
 ppCTerm' (CCONST DISJ) = tell "v"
