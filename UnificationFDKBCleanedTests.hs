@@ -1,5 +1,6 @@
 module UnifikationFDKBCleanedTests where
 
+import Control.Unification
 import UnificationFDKBCleaned
 import UnificationFDApproach
 import Control.Monad.Trans
@@ -111,8 +112,14 @@ testIneqKB = [["constant true"],
 testIneqGoal = ["(true = false) -> bot"]
 
 
-testImplKB = [["x = x"],["x = x"]]--,
-              --["bot", "x"],
-              --["bot", "x"]]
+testImplKB = [["x = x"],["x = x"],
+              ["bot", "x"],
+              ["bot", "x"]]
 testImplGoal = ["(A = bot) -> (F bot) -> (F A)", "A = top"]
---this does not work. If the binding is applied to A, it traverses outside.
+--this does not work. If the binding is applied to A, it traverses outside. But maybe that's ok...if the proof is done in a way that does not fit the overall rules it should not have been possible...
+--I should try with giving a possibility to derive bot properly...
+
+--this breaks currently for several reasons: first, there is no distinction between existential and universal variables, so everything unassigned is just treated universal which makes rule application weird. Second, I haven't quite figured out in the backwardsPossibilities function what would be the returned clause...there is something odd there...
+
+testImplKB2 = []
+testImplGoal2 = ["A -> (A -> B) -> B"]
