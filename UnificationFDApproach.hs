@@ -52,10 +52,12 @@ scon s = UTerm (CONST (CON s))
 appl :: OpenTerm -> OpenTerm -> OpenTerm
 appl a b = UTerm (APPL a b)
 
---TODO! This should be a foldl, not foldr! WARNING!
 olist :: [OpenTerm] -> OpenTerm
 olist [] = UTerm (CONST TOP)
 olist ls = foldl1 (\x y -> UTerm (APPL x y)) ls
+
+oplist :: OpenTerm -> [OpenTerm] -> OpenTerm
+oplist op ls = olist (intersperse op ls)
 
 clst :: [CTerm a] -> CTerm a
 clst [] = CCONST BOT
