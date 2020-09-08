@@ -123,3 +123,4 @@ testImplGoal = ["(A = bot) -> (F bot) -> (F A)", "A = top"]
 
 testImplKB2 = []
 testImplGoal2 = ["A -> (A -> B) -> B"]
+--TODO: Have existential and universal variables! Not gonna work otherwise!
