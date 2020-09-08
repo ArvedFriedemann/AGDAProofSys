@@ -63,10 +63,13 @@ backwardPossibilities :: (Monad m) => KB -> OpenTerm -> IntBindMonT m [(Clause, 
 backwardPossibilities kb goal = do {
   gclause <- matchClauseStructure goal;
   case gclause of
-    (prems,post) -> possibleActions [matchClause post c >>=
+    (prems,post) -> do {
+      prems' <- sequence $ matchClauseStructure <$> prems;
+      possibleActions [matchClause post c >>=
                   (\c' -> return $ ((\c'' -> oplist (con IMPL) (prems ++ [c''])) <$> (cprem c'),
                                              oplist (con IMPL) (prems ++ [cpost c'])))
-                                    | c <- (listToClause <$> return <$> prems) ++ kb]
+                                    | c <- prems' ++ kb]
+    }
 }
 --propagates all goals that have only a single rule match. Returns the next list of goals (they could be further propagated). Also returns whether anything has changed at all.
 --For safety, this only propagates the first singletonian! (they sometimes interfere when conflict arises)
