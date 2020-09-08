@@ -13,9 +13,6 @@ import Debug.Trace
 type Clause = ([OpenTerm], OpenTerm)
 type KB = [Clause]
 
-mapPrems :: ([OpenTerm] -> [OpenTerm]) -> Clause -> Clause
-mapPrems fkt (prems,post) = (fkt prems, post)
-
 cprem :: Clause -> [OpenTerm]
 cprem (prems, _) = prems
 
@@ -63,13 +60,7 @@ backwardPossibilities :: (Monad m) => KB -> OpenTerm -> IntBindMonT m [(Clause, 
 backwardPossibilities kb goal = do {
   gclause <- matchClauseStructure goal;
   case gclause of
-    (prems,post) -> do {
-      prems' <- sequence $ matchClauseStructure <$> prems;
-      possibleActions [matchClause post c >>=
-                  (\c' -> return $ ((\c'' -> oplist (con IMPL) (prems ++ [c''])) <$> (cprem c'),
-                                             oplist (con IMPL) (prems ++ [cpost c'])))
-                                    | c <- prems' ++ kb]
-    }
+    (prems,post) -> possibleActions [matchClause post c | c <- (listToClause <$> return <$> prems) ++ kb]
 }
 --propagates all goals that have only a single rule match. Returns the next list of goals (they could be further propagated). Also returns whether anything has changed at all.
 --For safety, this only propagates the first singletonian! (they sometimes interfere when conflict arises)
@@ -106,7 +97,7 @@ matchBinConst cst term = do {
                               ot <- return $ olist [a, con cst, b];
                               sub <- subsumes ot term;
                               if sub
-                              then unify ot term >> applyBindingsAll [a,b] >>= (\[a',b'] -> return (a',b'));
+                              then unify ot term >> return (a,b);
                               else (lift freeVar) >>= (\vd -> throwE (occursFailure vd term)) --TODO: again, super hacky
                             }
 
@@ -143,8 +134,8 @@ interactiveProof kb goals = do {
 
 interactiveProof'' :: KB -> [OpenTerm] -> IntBindMonT IO [OpenTerm]
 interactiveProof'' kb goals = do {
-  --goals' <- propagateProof kb goals;
-  goals' <- return goals;
+  goals' <- propagateProof kb goals;
+  --goals' <- return goals;
   if null goals'
   then do {
     lift2 $ putStrLn "Congratulations! All goals fulfilled!";
