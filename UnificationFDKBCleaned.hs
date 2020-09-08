@@ -58,22 +58,8 @@ matchClause goal clause = do {
 
 --gives for a goal all possible new branches with goals, the new assignment and the action for when taking the branch.
 backwardPossibilities :: (Monad m) => KB -> OpenTerm -> IntBindMonT m [(Clause, IntBindMonT m Clause)]
-<<<<<<< HEAD
 backwardPossibilities kb goal = possibleActions [matchClause goal c | c <- kb]
 
-=======
-backwardPossibilities kb goal = do {
-  gclause <- matchClauseStructure goal;
-  case gclause of
-    (prems,post) -> do {
-      prems' <- sequence $ matchClauseStructure <$> prems;
-      possibleActions [matchClause post c >>=
-                  (\c' -> return $ ((\c'' -> oplist (con IMPL) (prems ++ [c''])) <$> (cprem c'),
-                                             oplist (con IMPL) (prems ++ [cpost c'])))
-                                    | c <- prems' ++ kb]
-    }
-}
->>>>>>> parent of 1af97f4... Revert "[WIP], but fixed an issue with clause matching"
 --propagates all goals that have only a single rule match. Returns the next list of goals (they could be further propagated). Also returns whether anything has changed at all.
 --For safety, this only propagates the first singletonian! (they sometimes interfere when conflict arises)
 propagateProofStep' :: (Monad m) => KB -> [OpenTerm] -> IntBindMonT m ([OpenTerm],Bool)
@@ -107,15 +93,10 @@ matchBinConst cst term = do {
                               a <- lift $ freshVar;
                               b <- lift $ freshVar;
                               ot <- return $ olist [a, con cst, b];
-<<<<<<< HEAD
-                              unify ot term;
-                              return (a,b)
-=======
                               sub <- subsumes ot term;
                               if sub
                               then unify ot term >> applyBindingsAll [a,b] >>= (\[a',b'] -> return (a',b'));
                               else (lift freeVar) >>= (\vd -> throwE (occursFailure vd term)) --TODO: again, super hacky
->>>>>>> parent of 1af97f4... Revert "[WIP], but fixed an issue with clause matching"
                             }
 
 matchBinConstLAssocList :: (Monad m) => Constant -> OpenTerm -> IntBindMonT m [OpenTerm]
@@ -151,12 +132,8 @@ interactiveProof kb goals = do {
 
 interactiveProof'' :: KB -> [OpenTerm] -> IntBindMonT IO [OpenTerm]
 interactiveProof'' kb goals = do {
-<<<<<<< HEAD
   goals' <- propagateProof kb goals;
-=======
-  --goals' <- propagateProof kb goals;
-  goals' <- return goals;
->>>>>>> parent of 1af97f4... Revert "[WIP], but fixed an issue with clause matching"
+  --goals' <- return goals;
   if null goals'
   then do {
     lift2 $ putStrLn "Congratulations! All goals fulfilled!";

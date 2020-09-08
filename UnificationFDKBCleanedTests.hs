@@ -47,7 +47,7 @@ testgoal3 = ["list a", "list b", "a = b"]
 
 
 bounds = ["=","->","^","v","bot",":","[]",
-          "append", "length", "zero", "suc", "list", "consteq"
+          "append", "length", "zero", "suc", "list", "consteq",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "1","2","3","4","5","6","7","8","9"]
 
