@@ -8,10 +8,12 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Except
 import Control.Monad
 import Data.List
-import Debug.Trace
 
 type Clause = ([OpenTerm], OpenTerm)
 type KB = [Clause]
+
+mapPrems :: ([OpenTerm] -> [OpenTerm]) -> Clause -> Clause
+mapPrems fkt (prems,post) = (fkt prems, post)
 
 cprem :: Clause -> [OpenTerm]
 cprem (prems, _) = prems
@@ -40,7 +42,6 @@ matchClause :: (Monad m) => OpenTerm -> Clause -> IntBindMonT m Clause
 matchClause goal clause = do {
   newclause@(newgoals, post) <- transformAsListM freshenAll clause;
   --
-  --traceM $ "Merging (" ++ (oTToString post) ++ ") and (" ++ (oTToString goal) ++ ")";
   unify post goal;
   transformAsListM applyBindingsAll newclause
   --
@@ -57,11 +58,22 @@ matchClause goal clause = do {
 
 --gives for a goal all possible new branches with goals, the new assignment and the action for when taking the branch.
 backwardPossibilities :: (Monad m) => KB -> OpenTerm -> IntBindMonT m [(Clause, IntBindMonT m Clause)]
+<<<<<<< HEAD
+backwardPossibilities kb goal = possibleActions [matchClause goal c | c <- kb]
+
+=======
 backwardPossibilities kb goal = do {
   gclause <- matchClauseStructure goal;
   case gclause of
-    (prems,post) -> possibleActions [matchClause post c | c <- (listToClause <$> return <$> prems) ++ kb]
+    (prems,post) -> do {
+      prems' <- sequence $ matchClauseStructure <$> prems;
+      possibleActions [matchClause post c >>=
+                  (\c' -> return $ ((\c'' -> oplist (con IMPL) (prems ++ [c''])) <$> (cprem c'),
+                                             oplist (con IMPL) (prems ++ [cpost c'])))
+                                    | c <- prems' ++ kb]
+    }
 }
+>>>>>>> parent of 1af97f4... Revert "[WIP], but fixed an issue with clause matching"
 --propagates all goals that have only a single rule match. Returns the next list of goals (they could be further propagated). Also returns whether anything has changed at all.
 --For safety, this only propagates the first singletonian! (they sometimes interfere when conflict arises)
 propagateProofStep' :: (Monad m) => KB -> [OpenTerm] -> IntBindMonT m ([OpenTerm],Bool)
@@ -89,16 +101,21 @@ unifyEQGoals trms = do {
 }
 
 
---checks if the given term is a left-associative binary operator of the given constant. If that is the case it returns the two arguments. Does not apply the bindings!
+--checks if the given term is a left-associative binary operator of the given constnat. If that is the case it returns the two arguments. Does not apply the bindings!
 matchBinConst :: (Monad m) => Constant -> OpenTerm -> IntBindMonT m (OpenTerm,OpenTerm)
 matchBinConst cst term = do {
                               a <- lift $ freshVar;
                               b <- lift $ freshVar;
                               ot <- return $ olist [a, con cst, b];
+<<<<<<< HEAD
+                              unify ot term;
+                              return (a,b)
+=======
                               sub <- subsumes ot term;
                               if sub
-                              then unify ot term >> return (a,b);
+                              then unify ot term >> applyBindingsAll [a,b] >>= (\[a',b'] -> return (a',b'));
                               else (lift freeVar) >>= (\vd -> throwE (occursFailure vd term)) --TODO: again, super hacky
+>>>>>>> parent of 1af97f4... Revert "[WIP], but fixed an issue with clause matching"
                             }
 
 matchBinConstLAssocList :: (Monad m) => Constant -> OpenTerm -> IntBindMonT m [OpenTerm]
@@ -134,8 +151,12 @@ interactiveProof kb goals = do {
 
 interactiveProof'' :: KB -> [OpenTerm] -> IntBindMonT IO [OpenTerm]
 interactiveProof'' kb goals = do {
+<<<<<<< HEAD
   goals' <- propagateProof kb goals;
-  --goals' <- return goals;
+=======
+  --goals' <- propagateProof kb goals;
+  goals' <- return goals;
+>>>>>>> parent of 1af97f4... Revert "[WIP], but fixed an issue with clause matching"
   if null goals'
   then do {
     lift2 $ putStrLn "Congratulations! All goals fulfilled!";

@@ -8,7 +8,7 @@ import Control.Monad
 
 type StringKB = [[String]]
 
-binds = (bindConstTo [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT), ("top", TOP)]).(bindConst bounds)
+binds = (bindConstTo [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT)]).(bindConst bounds)
 stdrd = binds.rt
 
 stdcrt :: (Monad m) => String -> IntBindMonT m OpenTerm
@@ -47,7 +47,7 @@ testgoal3 = ["list a", "list b", "a = b"]
 
 
 bounds = ["=","->","^","v","bot",":","[]",
-          "append", "length", "zero", "suc", "list", "consteq",
+          "append", "length", "zero", "suc", "list", "consteq"
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "1","2","3","4","5","6","7","8","9"]
 
@@ -109,10 +109,3 @@ testIneqKB = [["constant true"],
               []] -- ...
 --WARNING: (consteq x y) -> bot can only be used for backward reasoning iff there is a finite number of constants. in other cases, prolly new constants would need to be allowed creating...
 testIneqGoal = ["(true = false) -> bot"]
-
-
-testImplKB = [["x = x"],["x = x"]]--,
-              --["bot", "x"],
-              --["bot", "x"]]
-testImplGoal = ["(A = bot) -> (F bot) -> (F A)", "A = top"]
---this does not work. If the binding is applied to A, it traverses outside.
