@@ -2,37 +2,17 @@ module UnificationFDKBReflectionTests where
 
 import UnificationFDKBCleaned
 import UnificationFDApproach
+import UnificationFDTestLogic
 import Control.Monad.Trans
 import Control.Monad.Trans.Except
 import Control.Monad
-
-type StringKB = [[String]]
-
-binds = (bindConstTo [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT)]).(bindConst bounds)
-stdrd = binds.rt
-
-stdcrt :: (Monad m) => String -> IntBindMonT m OpenTerm
-stdcrt = lift.createOpenTerm.stdrd
-
-stdcrtAll :: (Monad m) => [String] -> IntBindMonT m [OpenTerm]
-stdcrtAll trms = lift $ createOpenTerms (stdrd <$> trms)
-
-stdkb :: (Monad m) => StringKB -> IntBindingTT m KB
-stdkb stringkb = do {
-  sequence $ [listToClause <$> (createOpenTerms (map stdrd clst)) | clst <- stringkb]
-}
-
-stdTest :: StringKB -> [String] -> IO (Either MError ())
-stdTest strkb goaltrms = runIntBindT $ do {
-  goals <- stdcrtAll goaltrms;
-  kb <- lift $ stdkb strkb;
-  interactiveProof kb goals
-}
 
 bounds = ["=","->","^","v","bot",":","[]",
           "append", "length", "zero", "suc",
           "solve", "deduce", "from", "with", "in", "as","conjunction", "is",
           "improvable", "because"]
+
+stdTest = stdTest' bounds
 
 reflTestKB = [["x = x"],
               ["x in x"],
@@ -63,9 +43,7 @@ deduce z4 from (z3 ^ (z3 -> z4)) with (c9 d2)
 --TODO: Maybe make a special Goal IMPROV that is fulfilled when there are no steps left
 reflTestKB2 = [["x = x"],
                 ["(A in kb) improvable from kb because p'",
-                  "((B -> A) deducible from kb with pba) ->
-                      (B as conjunction is implconj) ->
-                      (implconj improvable form kb because pprem)",
+                  "((B -> A) deducible from kb with pba) -> (B as conjunction is implconj) -> (implconj improvable form kb because pprem)",
                   "A improvable from kb because p"],
                 ["A improvable from kb because pa",
                   "B improvable from kb because pb",
@@ -73,7 +51,7 @@ reflTestKB2 = [["x = x"],
                 ["A improvable from kb because pa",
                     "(A ^ B) improvable from kb because p"],
                 ["B improvable from kb because pa",
-                    "(A ^ B) improvable from kb because p"],
+                    "(A ^ B) improvable from kb because p"]
 
               --[]
             ]

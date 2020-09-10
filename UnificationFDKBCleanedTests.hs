@@ -2,32 +2,18 @@ module UnifikationFDKBCleanedTests where
 
 import UnificationFDKBCleaned
 import UnificationFDApproach
+import UnificationFDTestLogic
 import Control.Monad.Trans
 import Control.Monad.Trans.Except
 import Control.Monad
 
-type StringKB = [[String]]
 
-binds = (bindConstTo [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT)]).(bindConst bounds)
-stdrd = binds.rt
-
-stdcrt :: (Monad m) => String -> IntBindMonT m OpenTerm
-stdcrt = lift.createOpenTerm.stdrd
-
-stdcrtAll :: (Monad m) => [String] -> IntBindMonT m [OpenTerm]
-stdcrtAll trms = lift $ createOpenTerms (stdrd <$> trms)
-
-stdkb :: (Monad m) => StringKB -> IntBindingTT m KB
-stdkb stringkb = do {
-  sequence $ [listToClause <$> (createOpenTerms (map stdrd clst)) | clst <- stringkb]
-}
-
-stdTest :: StringKB -> [String] -> IO (Either MError ())
-stdTest strkb goaltrms = runIntBindT $ do {
-  goals <- stdcrtAll goaltrms;
-  kb <- lift $ stdkb strkb;
-  interactiveProof kb goals
-}
+bounds = ["=","->","^","v","bot",":","[]",
+          "append", "length", "zero", "suc", "list", "consteq",
+          "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
+          "1","2","3","4","5","6","7","8","9"]
+          
+stdTest = stdTest' bounds
 
 testkb1 = [["a","a v b"],["b", "a v b"], ["bot", "a"]]
 testgoal1 = ["a v b"]
@@ -45,11 +31,6 @@ testkb3 = [ ["x = x"],
             ["list xs", "list (xs : x)"]]
 testgoal3 = ["list a", "list b", "a = b"]
 
-
-bounds = ["=","->","^","v","bot",":","[]",
-          "append", "length", "zero", "suc", "list", "consteq",
-          "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
-          "1","2","3","4","5","6","7","8","9"]
 
 testkblang = [["subject (the car)"],
               ["subject (the moth)"],
