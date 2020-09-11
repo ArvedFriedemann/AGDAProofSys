@@ -28,7 +28,9 @@ instance Unifiable Term where
     zipMatch (APPL a b) (APPL a' b')                = Just $ APPL (Right (a, a')) (Right (b, b'))
     zipMatch _              _                       = Nothing
 
+--doesn't work as the same variable could be pointed both existential and universal...
 --data CTerm a = CCONST Constant | UNIVERSALV a | EXISTENTIALV a | CAPPL (CTerm a) (CTerm a) deriving (Show, Eq)
+data CTerm a = CCONST Constant | CVAR a | CAPPL (CTerm a) (CTerm a) deriving (Show, Eq)
 
 data CustomError t v =  OccursFailure v (UTerm t v)
                       | MismatchFailure (t (UTerm t v)) (t (UTerm t v))
@@ -64,7 +66,6 @@ instance (Monad m) => VarProperties IntVar (IntBindMonQuanT m) where
 
 -- type ClosedTerm = Fix Term
 type OpenTerm = UTerm Term IntVar
-type IntBinding = IntBindingT Term Identity
 type MError = CustomError Term IntVar
 type IntBindingTT m = IntBindingT Term m
 type IntBindMonT m = ExceptT MError (IntBindingTT m)
