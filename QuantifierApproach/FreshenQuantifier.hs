@@ -10,7 +10,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-imports #-}
 #endif
 
-module TermFunctions where
+module FreshenQuantifier where
 
 import TermData
 import Control.Unification
