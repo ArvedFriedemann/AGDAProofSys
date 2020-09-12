@@ -34,6 +34,7 @@ data CTerm a = CCONST Constant | CVAR a | CAPPL (CTerm a) (CTerm a) deriving (Sh
 
 data CustomError t v =  OccursFailure v (UTerm t v)
                       | MismatchFailure (t (UTerm t v)) (t (UTerm t v))
+                      | UniversalBoundError v
                       | CustomError String
 
 data VarProp = UNIVERSAL | EXISTENTIAL | NEUTRAL deriving (Show, Eq)
@@ -63,6 +64,9 @@ instance (Monad m) => VarProperties IntVar (IntBindMonQuanT m) where
       Nothing -> return NEUTRAL
   }
   setProperty v prop = lift2 $ modify (Map.insert (getVarID v) prop)
+
+instance Ord IntVar where
+  compare a b = compare (getVarID a) (getVarID b)
 
 -- type ClosedTerm = Fix Term
 type OpenTerm = UTerm Term IntVar

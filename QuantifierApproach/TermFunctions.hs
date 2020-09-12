@@ -5,9 +5,11 @@ import Data.Set as Set
 import Data.Map as Map
 import Data.Maybe
 import Data.List
+import Control.Monad
 import Control.Monad.Trans
 import Control.Unification
 import Control.Unification.IntVar
+import Control.Monad.Trans.Except
 
 con :: Constant -> OpenTerm
 con = UTerm . CONST
@@ -33,6 +35,11 @@ cvars (CCONST _) = Set.empty
 cvars (CVAR v) = Set.singleton v
 cvars (CAPPL a b) = Set.union (cvars a) (cvars b)
 
+ovars :: OpenTerm -> Set IntVar
+ovars (UTerm (CONST _)) = Set.empty
+ovars (UVar v) = Set.singleton v
+ovars (UTerm (APPL a b)) = Set.union (ovars a) (ovars b)
+
 freshVar :: (Monad m) => IntBindingTT m OpenTerm
 freshVar = var <$> freeVar
 
@@ -53,3 +60,20 @@ fromCTerms props terms = do {
   sequence $ [setProperty v (props var) | (var, v) <- Map.toList varMap];
   return $ toOpenTerm <$> (mapVars (\var -> fromJust (Map.lookup var varMap)) ) <$> terms
 }
+
+isBound :: (Monad m) => IntVar -> IntBindingTT m Bool
+isBound var = do {
+  masm <- lookupVar var;
+  case masm of
+    Just t -> return True
+    Nothing -> return False
+}
+
+--TODO: WARNING: This only checks if universal was bound, but not whether it is equal to another variable (which it cannot be if its universal)
+checkUniversalsUnbound :: (Monad m) => OpenTerm -> IntBindMonQuanT m ()
+checkUniversalsUnbound trm = void $ sequence [do {
+    uniBound <- (&&) <$> (lift $ isBound v) <*> isUniversal v;
+    if uniBound
+    then throwE (UniversalBoundError v)
+    else return ()}
+    | v <- Set.toList $ ovars trm]
