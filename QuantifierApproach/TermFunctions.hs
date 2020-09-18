@@ -27,6 +27,10 @@ olist :: [OpenTerm] -> OpenTerm
 olist [] = UTerm (CONST TOP)
 olist ls = foldl1 (\x y -> UTerm (APPL x y)) ls
 
+clst :: [CTerm a] -> CTerm a
+clst [] = CCONST BOT
+clst ls = foldl1 CAPPL ls
+
 oplist :: OpenTerm -> [OpenTerm] -> OpenTerm
 oplist op ls = olist (intersperse op ls)
 
@@ -48,10 +52,26 @@ mapVars fkt (CCONST c) = CCONST c
 mapVars fkt (CVAR v) = CVAR (fkt v)
 mapVars fkt (CAPPL a b) = CAPPL (mapVars fkt a) (mapVars fkt b)
 
+applyCBind :: (Eq a, Ord a) => Map a b -> CTerm a -> CTerm b
+applyCBind asm (CCONST c)  = CCONST c
+applyCBind asm (CVAR v)    = CVAR $ fromJust $ Map.lookup v asm
+applyCBind asm (CAPPL a b) = CAPPL (applyCBind asm a) (applyCBind asm b)
+
+--not too sure if the OpenTerms are anything special...
+applyCBinding :: (Eq a, Ord a) => Map a OpenTerm -> CTerm a -> OpenTerm
+applyCBinding asm (CCONST c)  = con c
+applyCBinding asm (CVAR v)    = fromJust $ Map.lookup v asm
+applyCBinding asm (CAPPL a b) = appl (applyCBinding asm a) (applyCBinding asm b)
+
 toOpenTerm :: CTerm IntVar -> OpenTerm
 toOpenTerm (CCONST c)   = con c
 toOpenTerm (CVAR v)     = var v
 toOpenTerm (CAPPL a b)  = appl (toOpenTerm a) (toOpenTerm b)
+
+fromOpenTerm :: OpenTerm -> CTerm IntVar
+fromOpenTerm (UVar i) = CVAR i
+fromOpenTerm (UTerm (CONST c)) = CCONST c
+fromOpenTerm (UTerm (APPL a b)) = CAPPL (fromOpenTerm a) (fromOpenTerm b)
 
 fromCTerms :: (Monad m, Ord a) => (a -> VarProp) -> [CTerm a] -> IntBindMonQuanT m [OpenTerm]
 fromCTerms props terms = do {
@@ -59,6 +79,16 @@ fromCTerms props terms = do {
                                     | var <- (Set.toList $ Set.unions (cvars <$> terms))];
   sequence $ [setProperty v (props var) | (var, v) <- Map.toList varMap];
   return $ toOpenTerm <$> (mapVars (\var -> fromJust (Map.lookup var varMap)) ) <$> terms
+}
+
+createOpenTerm :: (Monad m) => (Eq a, Ord a) => CTerm a -> IntBindingTT m OpenTerm
+createOpenTerm t = head <$> createOpenTerms [t]
+
+createOpenTerms :: (Monad m) => (Eq a, Ord a) => [CTerm a] -> IntBindingTT m [OpenTerm]
+createOpenTerms trms = do {
+  vars <- return $ Set.unions $ cvars <$> trms;
+  intVars <- sequence $ [freshVar | v <- Set.toList vars];
+  return $ applyCBinding (Map.fromList $ zip (Set.toList vars) intVars) <$> trms
 }
 
 isBound :: (Monad m) => IntVar -> IntBindingTT m Bool
