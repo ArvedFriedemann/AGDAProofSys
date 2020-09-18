@@ -1,5 +1,6 @@
 module InferenceRules where
 
+import Util
 import TermFunctions
 import TermData
 import FreshenQuantifier
@@ -25,3 +26,7 @@ matchClause clause goal = do {
   checkUniversalsUnbound goal;
   modifyAsList applyBindingsAll newclause; --WARNING: Maybe not needed...but for now, better safe than sorry
 }
+
+backwardPossibilities :: (Monad m) => KB -> Clause -> IntBindMonQuanT m [(Clause, IntBindMonQuanT m Clause)]
+backwardPossibilities kb (prems, post) = possibleActions [matchClause c post | c <- kb']
+  where kb' = (return <$> prems) ++ kb
