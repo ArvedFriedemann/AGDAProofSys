@@ -20,6 +20,9 @@ stdTest = stdTest' bounds
 testkb1 = [["a","a v b"],["b", "a v b"], ["bot", "a"]]
 testgoal1 = ["a v b"]
 
+testkb2 = [["a","a v b"],["b", "a v b"], ["bot"]]
+testgoal2 = ["a v b"]
+
 
 freshentest1 = runIntBindQuanT $ do {
   t1 <- stdcrt bounds "a b";

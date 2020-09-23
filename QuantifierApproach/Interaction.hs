@@ -20,21 +20,32 @@ type IdxGoalToPossMap m = PossMap (KB,OpenTerm) (Int, (Clause, IntBindMonQuanT m
 --TODO: also make interactveProofStep
 interactiveProof :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof goals = do {
+  interactiveProof' goals;
+  lift3 $ putStrLn "Original goals:";
+  aplGoals <- applyBindingsAll (snd <$> goals);
+  sequence $ (lift3.putStrLn.oTToString) <$> aplGoals;
+  return ()
+}
+
+interactiveProof' :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProof' [] = return ()
+interactiveProof' goals = do {
   possm <- proofPossibilities goals;
   printProofPossMap (possMapToIndices possm);
 
-  idx <- lift3 $ readLn;
   possmlen <- return $ possMapLength possm;
-  if (0 >= idx) && (idx < possmlen)
+
+  idx <- lift3 $ readLn;
+  if (0 <= idx) && (idx < possmlen)
   then do {
     (newGoals, oldG) <- snd $ possMapGetIdx idx possm;
     (kb, oldgoal) <- return $ possMapGetKeyWithIdx idx possm;
     (prems, oldgoal') <- matchClauseStructure oldgoal;
     oldGoalsKB <- return $ map fst $ possMapRemoveKeyWithIdx idx possm;
     newGoalsKB <- return $ [((clauseFromList <$> return <$> prems)++kb, g) | g <- newGoals];
-    interactiveProof (newGoalsKB ++ oldGoalsKB)
+    interactiveProof' (newGoalsKB ++ oldGoalsKB)
   }
-  else (lift3 $ putStrLn "invalid Index...") >> interactiveProof goals
+  else (lift3 $ putStrLn "invalid Index...") >> interactiveProof' goals
 }
 
 
