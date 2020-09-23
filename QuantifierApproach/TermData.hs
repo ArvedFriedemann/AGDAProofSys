@@ -39,6 +39,9 @@ data CustomError t v =  OccursFailure v (UTerm t v)
 
 data VarProp = UNIVERSAL | EXISTENTIAL | NEUTRAL deriving (Show, Eq)
 
+type Clause = ([OpenTerm], OpenTerm)
+type KB = [Clause]
+
 instance Fallible t v (CustomError t v) where
   occursFailure v t     = OccursFailure v t
   mismatchFailure t1 t2 = MismatchFailure t1 t2
@@ -84,3 +87,7 @@ lift2 = lift.lift
 lift3 :: (MonadTrans t1, MonadTrans t2, MonadTrans t3, Monad m, Monad (t3 m), Monad (t2 (t3 m))) =>
           m a -> t1 (t2 (t3 m)) a
 lift3 = lift.lift.lift
+
+lift4 :: (MonadTrans t1, MonadTrans t2, MonadTrans t3, MonadTrans t4, Monad m, Monad (t4 m), Monad (t3 (t4 m)), Monad (t2 (t3 (t4 m)))) =>
+          m a -> t1 (t2 (t3 (t4 m))) a
+lift4 = lift.lift.lift.lift

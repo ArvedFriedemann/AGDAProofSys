@@ -28,12 +28,3 @@ lookout m = do {
   put s;
   return r
 }
-
-
-lift2 :: (MonadTrans t1, MonadTrans t2, Monad m, Monad (t2 m)) =>
-          m a -> t1 (t2 m) a
-lift2 = lift.lift
-
-lift3 :: (MonadTrans t1, MonadTrans t2, MonadTrans t3, Monad m, Monad (t3 m), Monad (t2 (t3 m))) =>
-          m a -> t1 (t2 (t3 m)) a
-lift3 = lift.lift.lift

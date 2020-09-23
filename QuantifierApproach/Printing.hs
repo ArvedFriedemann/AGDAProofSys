@@ -5,6 +5,7 @@ import Prelude hiding (lookup)
 import Util
 import TermData
 import TermFunctions
+import InferenceRules
 
 import Control.Unification.Types
 import Control.Unification.IntVar
@@ -15,6 +16,13 @@ import Control.Monad.Trans.Writer
 import Control.Monad.State
 import Data.Set as Set hiding (map, take)
 import Data.Map as Map hiding (map, take)
+
+-------------------------
+--Pretty Printing
+-------------------------
+
+clauseToString :: Clause -> String
+clauseToString cls = oTToString $ clauseToTerm cls
 
 -------------------------
 --Output

@@ -91,6 +91,56 @@ createOpenTerms trms = do {
   return $ applyCBinding (Map.fromList $ zip (Set.toList vars) intVars) <$> trms
 }
 
+
+--checks if the given term is a left-associative binary operator of the given constant. If that is the case it returns the two arguments. Does not apply the bindings!
+matchBinConst :: (Monad m) => Constant -> OpenTerm -> IntBindMonQuanT m (OpenTerm,OpenTerm)
+matchBinConst cst term = do {
+                              a <- lift $ freshVar;
+                              b <- lift $ freshVar;
+                              ot <- return $ olist [a, con cst, b];
+                              sub <- subsumes ot term;
+                              if sub
+                              then unify ot term >> applyBindingsAll [a,b] >>= (\[a',b'] -> return (a',b'));
+                              else throwE (CustomError "No subsumtion")
+                            }
+
+matchBinConstLAssocList :: (Monad m) => Constant -> OpenTerm -> IntBindMonQuanT m [OpenTerm]
+matchBinConstLAssocList cst term = catchE (do {
+  (a,b) <- matchBinConst cst term;
+  lst <- matchBinConstLAssocList cst a;
+  return $ lst ++ [b];
+}) (const $ return [term])
+
+----------------------------------------------
+--Clauses
+----------------------------------------------
+
+clauseToList :: Clause -> [OpenTerm]
+clauseToList (prems, post) = prems ++ [post]
+
+listToClause :: [OpenTerm] -> Clause
+listToClause lst = (init lst, last lst)
+
+clauseFromList :: [OpenTerm] -> Clause
+clauseFromList lst = (init lst, last lst)
+
+clauseToTerm :: Clause -> OpenTerm
+clauseToTerm cls = oplist (con IMPL) (clauseToList cls)
+
+modifyAsList :: (Monad m) => ([OpenTerm] -> m [OpenTerm]) -> Clause -> m Clause
+modifyAsList fkt cls = clauseFromList <$> fkt (clauseToList cls)
+
+applyClause :: (Monad m) => Clause -> IntBindMonQuanT m Clause
+applyClause cls = modifyAsList applyBindingsAll cls
+
+matchClauseStructure :: (Monad m) => OpenTerm -> IntBindMonQuanT m Clause
+matchClauseStructure trm = listToClause <$> (matchBinConstLAssocList IMPL trm)
+
+
+
+
+
+
 isBound :: (Monad m) => IntVar -> IntBindingTT m Bool
 isBound var = do {
   masm <- lookupVar var;
