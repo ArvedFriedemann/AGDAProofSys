@@ -28,3 +28,7 @@ lookout m = do {
   put s;
   return r
 }
+
+isSingleton :: [a] -> Bool
+isSingleton [x] = True
+isSingleton _ = False

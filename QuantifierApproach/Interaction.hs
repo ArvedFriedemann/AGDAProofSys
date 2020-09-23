@@ -9,6 +9,7 @@ import Printing
 import Control.Unification
 import Control.Monad
 import Debug.Trace
+import Data.List
 
 type Conj a = [a]
 type Disj a = [a]
@@ -28,8 +29,10 @@ interactiveProof goals = do {
 }
 
 interactiveProof' :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProof' [] = return ()
-interactiveProof' goals = do {
+interactiveProof' goals = propagateProof goals >>= interactiveProof''
+interactiveProof'' :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProof'' [] = return ()
+interactiveProof'' goals = do {
   possm <- proofPossibilities goals;
   printProofPossMap (possMapToIndices possm);
 
@@ -37,17 +40,19 @@ interactiveProof' goals = do {
 
   idx <- lift3 $ readLn;
   if (0 <= idx) && (idx < possmlen)
-  then do {
-    (newGoals, oldG) <- snd $ possMapGetIdx idx possm;
-    (kb, oldgoal) <- return $ possMapGetKeyWithIdx idx possm;
-    (prems, oldgoal') <- matchClauseStructure oldgoal;
-    oldGoalsKB <- return $ map fst $ possMapRemoveKeyWithIdx idx possm;
-    newGoalsKB <- return $ [((clauseFromList <$> return <$> prems)++kb, g) | g <- newGoals];
-    interactiveProof' (newGoalsKB ++ oldGoalsKB)
-  }
+  then applyProofAction possm idx >>= interactiveProof'
   else (lift3 $ putStrLn "invalid Index...") >> interactiveProof' goals
 }
 
+applyProofAction :: (Monad m) => GoalToPossMap m -> Int -> IntBindMonQuanT m [(KB,OpenTerm)]
+applyProofAction possm idx = do {
+  (newGoals, oldG) <- snd $ possMapGetIdx idx possm;
+  (kb, oldgoal) <- return $ possMapGetKeyWithIdx idx possm;
+  (prems, oldgoal') <- matchClauseStructure oldgoal;
+  oldGoalsKB <- return $ map fst $ possMapRemoveKeyWithIdx idx possm;
+  newGoalsKB <- return $ [((clauseFromList <$> return <$> prems)++kb, g) | g <- newGoals];
+  return (newGoalsKB ++ oldGoalsKB)
+}
 
 proofPossibilities :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m (GoalToPossMap m)
 proofPossibilities kbgoals = sequence [do {
@@ -55,6 +60,14 @@ proofPossibilities kbgoals = sequence [do {
   return ((kb,g), bwp)
 } | (kb,g) <- kbgoals]
 
+propagateProof :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+propagateProof goals = do {
+  possm <- proofPossibilities goals;
+  midx <- return $ possMapIndexOfFirstSingleton possm;
+  case midx of
+    Just idx -> applyProofAction possm idx >>= propagateProof
+    Nothing -> return goals
+}
 
 printProofPossMap :: (IdxGoalToPossMap IO) -> IntBindMonQuanT IO ()
 printProofPossMap mp = void $ sequence [ do {
@@ -86,6 +99,15 @@ possMapToSndLst m = concatMap snd m
 
 possMapLength :: PossMap a b -> Int
 possMapLength = length.possMapToSndLst
+
+possMapIndexOfFirstSingleton :: PossMap a b -> Maybe Int
+possMapIndexOfFirstSingleton m = possMapIndexOfFirstSingleton' m 0
+possMapIndexOfFirstSingleton' :: PossMap a b -> Int -> Maybe Int
+possMapIndexOfFirstSingleton' [] idx = Nothing
+possMapIndexOfFirstSingleton' ((a, bs) : lst) idx =
+                                if isSingleton bs
+                                then Just idx
+                                else possMapIndexOfFirstSingleton' lst (idx + (length bs))
 
 
 --TODO: DIRTY!

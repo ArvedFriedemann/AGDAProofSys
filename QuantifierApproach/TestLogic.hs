@@ -5,6 +5,7 @@ import TermFunctions
 import Interaction
 import Printing
 
+import Data.List
 import Data.Map as Map
 import Control.Monad
 import Control.Monad.Trans

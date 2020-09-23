@@ -26,6 +26,12 @@ testgoal2 = ["a v b"]
 testkb3 = []
 testgoal3 = ["bot -> a"]
 
+testkb4 = [ ["append [] y y"],
+            ["append xs y ys","append (xs : x) y (ys : x)"],
+            ["length [] zero"],
+            ["length xs i", "length (xs : x) (suc i)"]]
+testgoal4 = ["append ([] : b : a) ([] : a) x", "length x y"]
+
 
 freshentest1 = runIntBindQuanT $ do {
   t1 <- stdcrt bounds "a b";
