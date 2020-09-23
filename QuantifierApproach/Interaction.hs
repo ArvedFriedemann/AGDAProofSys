@@ -51,7 +51,7 @@ interactiveProof' goals = do {
 
 proofPossibilities :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m (GoalToPossMap m)
 proofPossibilities kbgoals = sequence [do {
-  bwp <- backwardPossibilities kb g;
+  bwp <- backwardPossibilitiesMatchClause kb g;
   return ((kb,g), bwp)
 } | (kb,g) <- kbgoals]
 

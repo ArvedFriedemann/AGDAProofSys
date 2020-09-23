@@ -23,6 +23,9 @@ testgoal1 = ["a v b"]
 testkb2 = [["a","a v b"],["b", "a v b"], ["bot"]]
 testgoal2 = ["a v b"]
 
+testkb3 = []
+testgoal3 = ["bot -> a"]
+
 
 freshentest1 = runIntBindQuanT $ do {
   t1 <- stdcrt bounds "a b";

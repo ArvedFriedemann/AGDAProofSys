@@ -23,3 +23,6 @@ backwardPossibilities kb goal = possibleActions [matchClause c goal | c <- kb]
 
 backwardPossibilitiesClause :: (Monad m) => KB -> Clause -> IntBindMonQuanT m [(Clause, IntBindMonQuanT m Clause)]
 backwardPossibilitiesClause kb (prems, post) = backwardPossibilities ((return <$> prems) ++ kb) post
+
+backwardPossibilitiesMatchClause :: (Monad m) => KB -> OpenTerm -> IntBindMonQuanT m [(Clause, IntBindMonQuanT m Clause)]
+backwardPossibilitiesMatchClause kb trm = matchClauseStructure trm >>= backwardPossibilitiesClause kb
