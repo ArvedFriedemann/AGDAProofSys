@@ -5,6 +5,8 @@ import Printing
 import TermData
 import TermFunctions
 import FreshenQuantifier
+import InferenceRules
+
 import Control.Unification
 import Control.Monad.Trans
 
@@ -27,4 +29,15 @@ freshentest1 = runIntBindQuanT $ do {
   t2 <- freshenUniversal t1;
   lift3 $ putStrLn $ oTToString t1;
   lift3 $ putStrLn $ oTToString t2;
+}
+
+unificationtest1 = runIntBindQuanT $ do {
+  t1 <- stdcrt bounds "a b";
+  t2 <- stdcrt bounds "c d";
+  (_, post) <- matchClause ([],t1) t2;
+  --lift3 $ putStrLn $ "Alive";
+
+  lift3 $ putStrLn $ oTToString t1;
+  lift3 $ putStrLn $ oTToString t2;
+  lift3 $ putStrLn $ oTToString post;
 }

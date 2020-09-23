@@ -140,6 +140,12 @@ matchClauseStructure trm = listToClause <$> (matchBinConstLAssocList IMPL trm)
 applyKB :: (Monad m) => KB -> IntBindMonQuanT m KB
 applyKB kb = sequence $ applyClause <$> kb
 
+-----------------------------------------
+--Quantifier stuff
+-----------------------------------------
+
+
+
 
 
 isBound :: (Monad m) => IntVar -> IntBindingTT m Bool
