@@ -3,32 +3,18 @@ module UnifikationFDKBCleanedTests where
 import Control.Unification
 import UnificationFDKBCleaned
 import UnificationFDApproach
+import UnificationFDTestLogic
 import Control.Monad.Trans
 import Control.Monad.Trans.Except
 import Control.Monad
 
-type StringKB = [[String]]
 
-binds = (bindConstTo [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT), ("top", TOP)]).(bindConst bounds)
-stdrd = binds.rt
-
-stdcrt :: (Monad m) => String -> IntBindMonT m OpenTerm
-stdcrt = lift.createOpenTerm.stdrd
-
-stdcrtAll :: (Monad m) => [String] -> IntBindMonT m [OpenTerm]
-stdcrtAll trms = lift $ createOpenTerms (stdrd <$> trms)
-
-stdkb :: (Monad m) => StringKB -> IntBindingTT m KB
-stdkb stringkb = do {
-  sequence $ [listToClause <$> (createOpenTerms (map stdrd clst)) | clst <- stringkb]
-}
-
-stdTest :: StringKB -> [String] -> IO (Either MError ())
-stdTest strkb goaltrms = runIntBindT $ do {
-  goals <- stdcrtAll goaltrms;
-  kb <- lift $ stdkb strkb;
-  interactiveProof kb goals
-}
+bounds = ["=","->","^","v","bot",":","[]",
+          "append", "length", "zero", "suc", "list", "consteq",
+          "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
+          "1","2","3","4","5","6","7","8","9"]
+          
+stdTest = stdTest' bounds
 
 testkb1 = [["a","a v b"],["b", "a v b"], ["bot", "a"]]
 testgoal1 = ["a v b"]
@@ -46,11 +32,6 @@ testkb3 = [ ["x = x"],
             ["list xs", "list (xs : x)"]]
 testgoal3 = ["list a", "list b", "a = b"]
 
-
-bounds = ["=","->","^","v","bot",":","[]",
-          "append", "length", "zero", "suc", "list", "consteq",
-          "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
-          "1","2","3","4","5","6","7","8","9"]
 
 testkblang = [["subject (the car)"],
               ["subject (the moth)"],
@@ -110,6 +91,7 @@ testIneqKB = [["constant true"],
               []] -- ...
 --WARNING: (consteq x y) -> bot can only be used for backward reasoning iff there is a finite number of constants. in other cases, prolly new constants would need to be allowed creating...
 testIneqGoal = ["(true = false) -> bot"]
+<<<<<<< HEAD
 
 
 testImplKB = [["x = x"],["x = x"],
@@ -124,3 +106,5 @@ testImplGoal = ["(A = bot) -> (F bot) -> (F A)", "A = top"]
 testImplKB2 = []
 testImplGoal2 = ["A -> (A -> B) -> B"]
 --TODO: Have existential and universal variables! Not gonna work otherwise!
+=======
+>>>>>>> b502f85f0ffabb4eebc3ced525ddadfd6e3f699b
