@@ -81,7 +81,7 @@ fromCTerms props terms = do {
   sequence $ [setProperty v (props var) | (var, v) <- Map.toList varMap];
   return $ toOpenTerm <$> (mapVars (\var -> fromJust (Map.lookup var varMap)) ) <$> terms
 }
-
+--TODO: USE fromCTerms!
 createOpenTerm :: (Monad m) => (Eq a, Ord a) => CTerm a -> IntBindingTT m OpenTerm
 createOpenTerm t = head <$> createOpenTerms [t]
 
