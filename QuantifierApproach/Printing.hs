@@ -24,6 +24,9 @@ import Data.Map as Map hiding (map, take)
 clauseToString :: Clause -> String
 clauseToString cls = oTToString $ clauseToTerm cls
 
+kbToFormatString :: KB -> String
+kbToFormatString kb = unlines (clauseToString <$> kb)
+
 -------------------------
 --Output
 -------------------------

@@ -33,7 +33,7 @@ import Control.Monad.Error  (MonadError(..))
 import Control.Monad.State  (MonadState(..), evalStateT)
 import Control.Monad.State.UnificationExtras
 
-freshenUniversal trm = freshenAllUniversal [trm]
+freshenUniversal trm = head <$> freshenAllUniversal [trm]
 
 freshenAllUniversal
     ::  ( BindingMonad t v m

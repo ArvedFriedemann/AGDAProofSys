@@ -137,8 +137,8 @@ applyClause cls = modifyAsList applyBindingsAll cls
 matchClauseStructure :: (Monad m) => OpenTerm -> IntBindMonQuanT m Clause
 matchClauseStructure trm = listToClause <$> (matchBinConstLAssocList IMPL trm)
 
-
-
+applyKB :: (Monad m) => KB -> IntBindMonQuanT m KB
+applyKB kb = sequence $ applyClause <$> kb
 
 
 

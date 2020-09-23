@@ -5,8 +5,10 @@ import TermFunctions
 import InferenceRules
 import Util
 import Printing
+
 import Control.Unification
 import Control.Monad
+import Debug.Trace
 
 type Conj a = [a]
 type Disj a = [a]
@@ -46,10 +48,13 @@ proofPossibilities kbgoals = sequence [do {
 printProofPossMap :: (IdxGoalToPossMap IO) -> IntBindMonQuanT IO ()
 printProofPossMap mp = void $ sequence [ do {
   aplgoal <- applyBindings goal;
-  lift3 $ putStrLn $ "goal ("++(oTToString aplgoal)++")";
-  sequence [applyClause cls >>=
-            \cls' -> lift3 $ putStrLn $ "("++(show idx)++") "++(clauseToString cls')
-            | (idx, (cls, _)) <- poss];
+  aplkb <- applyKB kb;
+  lift3 $ putStrLn $ kbToFormatString aplkb;
+  lift3 $ putStrLn $ "goal ("++(oTToString aplgoal)++")       -- ("++ (show $ length poss) ++ " possibilitie(s))";
+  sequence [do {
+            cls' <- applyClause cls;
+            lift3 $ putStrLn $ "("++(show idx)++") "++(clauseToString cls')
+            }| (idx, (cls, _)) <- poss];
 } | ((kb, goal), poss) <- mp]
 
 
