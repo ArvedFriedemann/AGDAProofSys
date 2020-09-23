@@ -77,7 +77,7 @@ type MError = CustomError Term IntVar
 type IntBindingTT m = IntBindingT Term m
 type IntBindMonT m = ExceptT MError (IntBindingTT m)
 type PropStateT m = StateT (Map Int VarProp) m
-type IntBindMonQuanT m = ExceptT MError (IntBindingTT (PropStateT m))
+type IntBindMonQuanT m = IntBindMonT (PropStateT m)
 
 
 lift2 :: (MonadTrans t1, MonadTrans t2, Monad m, Monad (t2 m)) =>

@@ -7,6 +7,7 @@ import Data.Maybe
 import Data.List
 import Control.Monad
 import Control.Monad.Trans
+import Control.Monad.State
 import Control.Unification
 import Control.Unification.IntVar
 import Control.Monad.Trans.Except
@@ -164,3 +165,9 @@ checkUniversalsUnbound trm = do {
   --hasUniversalVarsMergeChanged <- equiv <*> (freshenUniversal goal) <*> (return goal);
   throwE (CustomError "TODOOOOOOO!")
 }
+
+runIntBindT :: (Monad m) => IntBindMonT m a -> m (Either MError a)
+runIntBindT m = evalIntBindingT $ runExceptT m
+
+runIntBindQuanT :: (Monad m) => IntBindMonQuanT m a -> m (Either MError a)
+runIntBindQuanT m = evalStateT (runIntBindT m) Map.empty
