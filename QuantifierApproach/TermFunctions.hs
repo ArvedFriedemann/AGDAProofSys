@@ -168,11 +168,8 @@ checkUniversalsUnbound trm = do {
     then throwE (UniversalBoundError v)
     else return ()}
     | v <- Set.toList $ ovars trm];
-  --this checks whether the assigned goal is still alpha equivalent to when the universals are exchanged
-  --TODO: This doesn't work like this. New equivalences are translated when freshening.
-  --TODO: Funny idea but...when unifying, number of variables can only decrease. Same for the universal variables...the number of them before has to be the same as after...
-  --hasUniversalVarsMergeChanged <- equiv <*> (freshenUniversal goal) <*> (return goal);
-  throwE (CustomError "TODOOOOOOO!")
+    return ();
+  --TODO: Weirdly this works, but I do not know why...
 }
 
 runIntBindT :: (Monad m) => IntBindMonT m a -> m (Either MError a)

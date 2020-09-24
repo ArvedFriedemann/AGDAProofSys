@@ -14,7 +14,7 @@ matchClause :: (Monad m) => Clause -> OpenTerm -> IntBindMonQuanT m Clause
 matchClause clause goal = do {
   newclause@(prems, post) <- modifyAsList freshenAllUniversal clause;--freshenAll clause; --
   unify post goal;
-  --checkUniversalsUnbound goal; --TODO !!!!!!!!!!
+  checkUniversalsUnbound goal; 
   applyClause newclause; --WARNING: Maybe not needed...but for now, better safe than sorry
 }
 

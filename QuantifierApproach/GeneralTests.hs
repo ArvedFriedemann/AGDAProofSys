@@ -11,6 +11,7 @@ import Control.Unification
 import Control.Monad.Trans
 
 bounds = ["=","->","^","v","bot",":","[]",
+          "Test", "Test2", "Test3",
           "append", "length", "zero", "suc", "list", "consteq",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "1","2","3","4","5","6","7","8","9"]
@@ -31,6 +32,12 @@ testkb3 = [           (["y"],["append [] y y"]),
              (["xs","i","x"],["length xs i", "length (xs : x) (suc i)"])]
 testgoal3 = ([],["append ([] : b : a) ([] : a) x", "length x y"])
 
+
+testkb4 = [(["A"],["Test A"]),
+           (["A"],["Test2 A A"]),
+           (["A","B"],["Test2 A B"]),
+              ([],["Test bot"])]
+testgoal4 = (["A","B","C"],["Test A", "Test B", "Test2 B C"])
 
 freshentest1 = runIntBindQuanT $ do {
   t1 <- stdcrt bounds ["a"] "a b";
