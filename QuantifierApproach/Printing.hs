@@ -121,4 +121,4 @@ rt = termFromString
 freshTermFromString :: (Monad m) => String -> IntBindingTT m OpenTerm
 freshTermFromString = freshTermFromString' []
 freshTermFromString' :: (Monad m) => [String] -> String -> IntBindingTT m OpenTerm
-freshTermFromString' bnds s = createOpenTerm $ bindConst bnds $ rt s
+freshTermFromString' bnds s = createNeutOpenTerm $ bindConst bnds $ rt s

@@ -74,19 +74,22 @@ fromOpenTerm (UVar i) = CVAR i
 fromOpenTerm (UTerm (CONST c)) = CCONST c
 fromOpenTerm (UTerm (APPL a b)) = CAPPL (fromOpenTerm a) (fromOpenTerm b)
 
-fromCTerms :: (Monad m, Ord a) => (a -> VarProp) -> [CTerm a] -> IntBindMonQuanT m [OpenTerm]
-fromCTerms props terms = do {
+createOpenTerm :: (Monad m, Ord a) => (a -> VarProp) -> CTerm a -> IntBindMonQuanT m OpenTerm
+createOpenTerm props term = head <$> createOpenTerms props [term]
+
+createOpenTerms :: (Monad m, Ord a) => (a -> VarProp) -> [CTerm a] -> IntBindMonQuanT m [OpenTerm]
+createOpenTerms props terms = do {
   varMap <- Map.fromList <$> sequence [(lift $ freeVar) >>= \v -> return (var, v)
                                     | var <- (Set.toList $ Set.unions (cvars <$> terms))];
   sequence $ [setProperty v (props var) | (var, v) <- Map.toList varMap];
   return $ toOpenTerm <$> (mapVars (\var -> fromJust (Map.lookup var varMap)) ) <$> terms
 }
---TODO: USE fromCTerms!
-createOpenTerm :: (Monad m) => (Eq a, Ord a) => CTerm a -> IntBindingTT m OpenTerm
-createOpenTerm t = head <$> createOpenTerms [t]
 
-createOpenTerms :: (Monad m) => (Eq a, Ord a) => [CTerm a] -> IntBindingTT m [OpenTerm]
-createOpenTerms trms = do {
+createNeutOpenTerm :: (Monad m) => (Eq a, Ord a) => CTerm a -> IntBindingTT m OpenTerm
+createNeutOpenTerm t = head <$> createNeutOpenTerms [t]
+
+createNeutOpenTerms :: (Monad m) => (Eq a, Ord a) => [CTerm a] -> IntBindingTT m [OpenTerm]
+createNeutOpenTerms trms = do {
   vars <- return $ Set.unions $ cvars <$> trms;
   intVars <- sequence $ [freshVar | v <- Set.toList vars];
   return $ applyCBinding (Map.fromList $ zip (Set.toList vars) intVars) <$> trms

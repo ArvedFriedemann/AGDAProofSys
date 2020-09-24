@@ -17,35 +17,31 @@ bounds = ["=","->","^","v","bot",":","[]",
 
 stdTest = stdTest' bounds
 
-testkb1 = [["a","a v b"],["b", "a v b"], ["bot", "a"]]
-testgoal1 = ["a v b"]
+testkb1 = [(["a","b"],["a","a v b"]),
+           (["a","b"],["b", "a v b"]),
+           (["a"],["bot", "a"])]
+testgoal1 = ([],["a v b"]) --as we want actual assignments for a and b, they are not universal
 
-testkb2 = [["a","a v b"],["b", "a v b"], ["bot"]]
-testgoal2 = ["a v b"]
+testkb2 = []
+testgoal2 = ([],["bot -> a"]) --as we want actual assignments for a, it is not universal
 
-testkb3 = []
-testgoal3 = ["bot -> a"]
-
-testkb4 = [ ["append [] y y"],
-            ["append xs y ys","append (xs : x) y (ys : x)"],
-            ["length [] zero"],
-            ["length xs i", "length (xs : x) (suc i)"]]
-testgoal4 = ["append ([] : b : a) ([] : a) x", "length x y"]
+testkb3 = [           (["y"],["append [] y y"]),
+            (["xs","y","ys"],["append xs y ys","append (xs : x) y (ys : x)"]),
+                         ([],["length [] zero"]),
+             (["xs","i","x"],["length xs i", "length (xs : x) (suc i)"])]
+testgoal3 = ([],["append ([] : b : a) ([] : a) x", "length x y"])
 
 
 freshentest1 = runIntBindQuanT $ do {
-  t1 <- stdcrt bounds "a b";
-  t1vs <- lift $ getFreeVars t1;
-  setProperty (head t1vs) UNIVERSAL;
-  --TODO...something needs to be set to universal...
+  t1 <- stdcrt bounds ["a"] "a b";
   t2 <- freshenUniversal t1;
   lift3 $ putStrLn $ oTToString t1;
   lift3 $ putStrLn $ oTToString t2;
 }
 
 unificationtest1 = runIntBindQuanT $ do {
-  t1 <- stdcrt bounds "a b";
-  t2 <- stdcrt bounds "c d";
+  t1 <- stdcrt bounds [] "a b";
+  t2 <- stdcrt bounds [] "c d";
   (_, post) <- matchClause ([],t1) t2;
   --lift3 $ putStrLn $ "Alive";
 
