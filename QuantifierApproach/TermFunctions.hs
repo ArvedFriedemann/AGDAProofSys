@@ -45,6 +45,11 @@ ovars (UTerm (CONST _)) = Set.empty
 ovars (UVar v) = Set.singleton v
 ovars (UTerm (APPL a b)) = Set.union (ovars a) (ovars b)
 
+--fails if term is not a variable
+getVar :: (Monad m) => OpenTerm -> IntBindMonQuanT m IntVar
+getVar (UVar v) = return v
+getVar _ = throwE (CustomError "Not a variable")
+
 freshVar :: (Monad m) => IntBindingTT m OpenTerm
 freshVar = var <$> freeVar
 
@@ -95,23 +100,53 @@ createNeutOpenTerms trms = do {
   return $ applyCBinding (Map.fromList $ zip (Set.toList vars) intVars) <$> trms
 }
 
+--unify the two terms a b, if a subsumes b. Throws an error if the subsumption failed.
+unifySubsumes :: (Monad m) => OpenTerm -> OpenTerm -> IntBindMonQuanT m OpenTerm
+unifySubsumes a b = do {
+  sub <- subsumes a b;
+  if sub
+  then unify a b
+  else throwE (CustomError "No subsumtion")
+}
 
---checks if the given term is a left-associative binary operator of the given constant. If that is the case it returns the two arguments. Does not apply the bindings!
+--checks if the given term is a left-associative binary operator of the given constant. If that is the case it returns the two arguments.
 matchBinConst :: (Monad m) => Constant -> OpenTerm -> IntBindMonQuanT m (OpenTerm,OpenTerm)
 matchBinConst cst term = do {
                               a <- lift $ freshVar;
                               b <- lift $ freshVar;
                               ot <- return $ olist [a, con cst, b];
-                              sub <- subsumes ot term;
-                              if sub
-                              then unify ot term >> applyBindingsAll [a,b] >>= (\[a',b'] -> return (a',b'));
-                              else throwE (CustomError "No subsumtion")
+                              unifySubsumes ot term; --TODO: Maybe term needs to be extracted...
+                              --TODO! Bindings should not need to be applied!
+                              lst <- applyBindingsAll [a,b];
+                              case lst of
+                                [a',b'] -> return (a',b')
+                                _ -> error "should not happen"
                             }
+
+matchBinAppl :: (Monad m) => OpenTerm -> IntBindMonQuanT m (OpenTerm,OpenTerm)
+matchBinAppl term = do {
+                          a <- lift $ freshVar;
+                          b <- lift $ freshVar;
+                          ot <- return $ olist [a, b];
+                          unifySubsumes ot term;--TODO: Maybe term needs to be extracted...
+                          --TODO! Bindings should not need to be applied!
+                          lst <- applyBindingsAll [a,b];
+                          case lst of
+                            [a',b'] -> return (a',b')
+                            _ -> error "should not happen"
+                        }
 
 matchBinConstLAssocList :: (Monad m) => Constant -> OpenTerm -> IntBindMonQuanT m [OpenTerm]
 matchBinConstLAssocList cst term = catchE (do {
   (a,b) <- matchBinConst cst term;
   lst <- matchBinConstLAssocList cst a;
+  return $ lst ++ [b];
+}) (const $ return [term])
+
+matchBinApplLAssocList :: (Monad m) => OpenTerm -> IntBindMonQuanT m [OpenTerm]
+matchBinApplLAssocList term = catchE (do {
+  (a,b) <- matchBinAppl term;
+  lst <- matchBinApplLAssocList a;
   return $ lst ++ [b];
 }) (const $ return [term])
 
@@ -158,16 +193,15 @@ isBound var = do {
 
 --TODO: WARNING: This only checks if universal was bound, but not whether it is equal to another variable (which it cannot be if its universal)
 checkUniversalsUnbound :: (Monad m) => OpenTerm -> IntBindMonQuanT m ()
-checkUniversalsUnbound trm = do {
-  sequence [do {
-    uniBound <- (&&) <$> (lift $ isBound v) <*> isUniversal v;
-    if uniBound
-    then throwE (UniversalBoundError v)
-    else return ()}
-    | v <- Set.toList $ ovars trm];
-    return ();
-  --TODO: Weirdly this works, but I do not know why...
-}
+checkUniversalsUnbound trm = checkUniversalsUnboundLst (ovars trm)
+
+checkUniversalsUnboundLst :: (Monad m) => Set IntVar -> IntBindMonQuanT m ()
+checkUniversalsUnboundLst vars = void $ sequence [do {
+  uniBound <- (&&) <$> (lift $ isBound v) <*> isUniversal v;
+  if uniBound
+  then throwE (UniversalBoundError v)
+  else return ()}
+  | v <- Set.toList vars]
 
 runIntBindT :: (Monad m) => IntBindMonT m a -> m (Either MError a)
 runIntBindT m = evalIntBindingT $ runExceptT m

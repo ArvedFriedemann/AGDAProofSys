@@ -5,7 +5,7 @@ import Prelude hiding (lookup)
 import Util
 import TermData
 import TermFunctions
-import InferenceRules
+--import InferenceRules
 
 import Control.Unification.Types
 import Control.Unification.IntVar
@@ -61,6 +61,8 @@ ppCTerm' (CCONST NEQ) = tell "/="
 ppCTerm' (CCONST IMPL) = tell "->"
 ppCTerm' (CCONST CONJ) = tell "^"
 ppCTerm' (CCONST DISJ) = tell "v"
+ppCTerm' (CCONST FORALL) = tell "forall"
+ppCTerm' (CCONST EXISTS) = tell "exists"
 ppCTerm' (CCONST (CON s)) = tell s
 ppCTerm' (CVAR v) = tell v
 ppCTerm' (CAPPL a b@(CAPPL a' b')) = ppCTerm' a >> tell " (" >> ppCTerm' b >> tell ")"

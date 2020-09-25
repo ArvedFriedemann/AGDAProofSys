@@ -13,7 +13,7 @@ import Control.Monad.Trans
 
 type StringKB = [([String],[String])] --every clause needs to carry its universal variables
 
-binds = \bounds -> (bindConstTo $ Map.fromList [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT)]).(bindConst bounds)
+binds = \bounds -> (bindConstTo $ Map.fromList [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT), ("forall", FORALL),("exists", EXISTS)]).(bindConst bounds)
 stdrd = \bounds -> (binds bounds).rt
 
 stdVarProp :: (Ord a) => [a] -> a -> VarProp

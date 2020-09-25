@@ -40,7 +40,7 @@ testkb4 = [(["A"],["Test A"]),
 testgoal4 = (["A","B","C"],["Test A", "Test B", "Test2 B C"])
 
 testkb5 = [(["A"],["Test A"]),
-           (["A"],["Test A", "Test3"])]
+           ([],["forall (A B) (Test A)", "Test3"])]
            --should be: ([],["foall X . Test X", "Test3"])
 testgoal5 = ([],["Test3"])
 --TODO! This does not work. There is a difference between (forall a. Test a) -> K and forall a. (Test a -> K). This is the reason universals are needed as terms! Only the top most of them should be evaluated during inference!
