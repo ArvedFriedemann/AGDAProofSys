@@ -3,6 +3,7 @@ module Interaction where
 import TermData
 import TermFunctions
 import InferenceRules
+import SpecialMatches
 import Util
 import Printing
 
