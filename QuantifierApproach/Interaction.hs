@@ -20,10 +20,8 @@ type GoalToPossMap m = PossMap (KB,OpenTerm) (Clause, IntBindMonQuanT m Clause)
 type IdxGoalToPossMap m = PossMap (KB,OpenTerm) (Int, (Clause, IntBindMonQuanT m Clause))
 
 interactiveProof :: [(RawKB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProof goals = do  {
-  goals' <- sequence $ [readRawKB kb >>= \kb' -> return (kb', gs) |(kb,gs) <- goals];
-  interactiveProofPreread goals';
-}
+interactiveProof goals = (sequence $ [readRawKB kb >>= \kb' -> return (kb', gs) |(kb,gs) <- goals]) >>=
+                          interactiveProofPreread
 
 --TODO: also make interactveProofStep
 interactiveProofPreread :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
@@ -93,11 +91,13 @@ printProofPossMap :: (IdxGoalToPossMap IO) -> IntBindMonQuanT IO ()
 printProofPossMap mp = void $ sequence [ do {
   aplgoal <- applyBindings goal;
   aplkb <- applyKB kb;
-  lift3 $ putStrLn $ kbToFormatString aplkb;
-  lift3 $ putStrLn $ "goal ("++(oTToString aplgoal)++")       -- ("++ (show $ length poss) ++ " possibilitie(s))";
+  kbToFormatStringVP aplkb >>= (lift3.putStrLn);
+  gstring <- oTToStringVP aplgoal;
+  lift3 $ putStrLn $ "goal ("++gstring++")       -- ("++ (show $ length poss) ++ " possibilitie(s))";
   sequence [do {
             cls' <- applyClause cls;
-            lift3 $ putStrLn $ "("++(show idx)++") "++(clauseToString cls')
+            clsstring <- clauseToStringVP cls';
+            lift3 $ putStrLn $ "("++(show idx)++") "++ clsstring
             }| (idx, (cls, _)) <- poss];
 } | ((kb, goal), poss) <- mp]
 

@@ -37,7 +37,7 @@ data CustomError t v =  OccursFailure v (UTerm t v)
                       | UniversalBoundError v
                       | CustomError String
 
-data VarProp = UNIVERSAL | EXISTENTIAL | NEUTRAL deriving (Show, Eq)
+data VarProp = UNIVERSAL | EXISTENTIAL | NEUTRAL deriving (Show, Eq, Ord)
 
 type Clause = ([OpenTerm], OpenTerm)
 type KB = [Clause]

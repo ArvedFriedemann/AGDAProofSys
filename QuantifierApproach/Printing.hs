@@ -24,8 +24,14 @@ import Data.Map as Map hiding (map, take)
 clauseToString :: Clause -> String
 clauseToString cls = oTToString $ clauseToTerm cls
 
+clauseToStringVP :: (Monad m) => Clause -> IntBindMonQuanT m String
+clauseToStringVP cls = oTToStringVP $ clauseToTerm cls
+
 kbToFormatString :: KB -> String
 kbToFormatString kb = unlines (clauseToString <$> kb)
+
+kbToFormatStringVP :: (Monad m) => KB -> IntBindMonQuanT m String
+kbToFormatStringVP kb = unlines <$> (sequence $ clauseToStringVP <$> kb)
 
 -------------------------
 --Output
@@ -42,7 +48,10 @@ intVarToInt :: IntVar -> Int
 intVarToInt (IntVar i) = i
 
 giveNiceIntNames :: CTerm IntVar -> CTerm String
-giveNiceIntNames = mapVars ((\x -> (niceNames' niceNameMultConst) !! x).(\x -> x `mod` (26 * niceNameMultConst)).intVarToInt)
+giveNiceIntNames = mapVars intVarToNiceName
+
+intVarToNiceName :: IntVar -> String
+intVarToNiceName = (\x -> (niceNames' niceNameMultConst) !! x).(\x -> x `mod` (26 * niceNameMultConst)).intVarToInt
   where niceNameMultConst = 9
 
 giveNiceNames :: (Eq a, Ord a) => CTerm a -> CTerm String
@@ -51,7 +60,7 @@ giveNiceNames t = applyCBind asm t
         asm = Map.fromList $ zip vars niceNames
 
 ppCTerm :: CTerm String -> String
-ppCTerm t = execWriter $ ppCTerm' t
+ppCTerm t = execWriter $ ppCTerm' (Map.empty) t
 
 ppCTermVP :: Map String VarProp -> CTerm String -> String
 ppCTermVP m t = execWriter $ ppCTerm' m t
@@ -88,16 +97,16 @@ bindConstTo bnds (CVAR x) = case lookup x bnds of
 bindConstTo bnds (CAPPL a b) = CAPPL (bindConstTo bnds a) (bindConstTo bnds b)
 
 oTToString :: OpenTerm -> String
-oTToString t = ppCTerm (Map.empty) $ giveNiceIntNames $ fromOpenTerm t
+oTToString t = ppCTerm $ giveNiceIntNames $ fromOpenTerm t
 
 oTToStringMap :: Map String VarProp -> OpenTerm -> String
-oTToStringMap m t = ppCTerm m $ giveNiceIntNames $ fromOpenTerm t
+oTToStringMap m t = ppCTermVP m $ giveNiceIntNames $ fromOpenTerm t
 
 oTToStringVP :: (Monad m) => OpenTerm -> IntBindMonQuanT m String
 oTToStringVP ot = do {
   ct <- fromOpenTermVP ot;
-  propmap <- return $ Map.fromList $ Set.toList $ cvars ct;
-  oTToStringMap propmap ot
+  propmap <- return $ Map.fromList $ (\(x,y) -> (intVarToNiceName x, y) ) <$> (Set.toList $ cvars ct);
+  return $ oTToStringMap propmap ot
 }
 
 

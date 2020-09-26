@@ -6,6 +6,7 @@ import TermData
 import TermFunctions
 import FreshenQuantifier
 import InferenceRules
+import SpecialMatches
 
 import Control.Unification
 import Control.Monad.Trans
@@ -60,8 +61,8 @@ testgoal6 = []
 freshentest1 = runIntBindQuanT $ do {
   t1 <- stdcrt bounds ["a"] "a b";
   t2 <- freshenUniversal t1;
-  lift3 $ putStrLn $ oTToString t1;
-  lift3 $ putStrLn $ oTToString t2;
+  oTToStringVP t1 >>= (lift3.putStrLn);
+  oTToStringVP t2 >>= (lift3.putStrLn);
 }
 
 unificationtest1 = runIntBindQuanT $ do {
@@ -73,4 +74,22 @@ unificationtest1 = runIntBindQuanT $ do {
   lift3 $ putStrLn $ oTToString t1;
   lift3 $ putStrLn $ oTToString t2;
   lift3 $ putStrLn $ oTToString post;
+}
+
+instantiationtest1 = runIntBindQuanT $ do {
+  t1 <- stdcrt bounds [] "forall (X Y) (X Y X)";
+  oTToStringVP t1 >>= (lift3.putStrLn);
+  instantiateUniversality t1 >>= oTToStringVP >>= (lift3.putStrLn);
+}
+
+readrawkbtest1 = runIntBindQuanT $ do {
+  stdkb bounds ["forall X (X X X)","forall Y (Y Y)"] >>= readRawKB >>= kbToFormatStringVP >>= (lift3.putStrLn)
+}
+
+matchbinappllassoclisttest1 = runIntBindQuanT $ do {
+  t1 <- stdcrt bounds [] "a b c d e f";
+  oTToStringVP t1 >>= (lift3.putStrLn);
+  ts <- matchBinApplLAssocList t1 >>= applyBindingsAll;
+  tss <- sequence (oTToStringVP <$> ts);
+  lift3 $ putStrLn $ unlines tss;
 }

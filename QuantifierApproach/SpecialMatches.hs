@@ -22,13 +22,14 @@ matchUniversalBinding trm = do {
   ot <- return $ olist [con FORALL, a, b];
   unifySubsumes ot trm;
   hopefullyVars <- matchBinApplLAssocList a;
+  traceM $ show $ oTToString <$> hopefullyVars;
   b' <- applyBindings b; -- TODO
   return (hopefullyVars, b')
 }
 
 applyUniversalCriterion :: (Monad m) => [OpenTerm] -> IntBindMonQuanT m ()
 applyUniversalCriterion vars = do {
-  --sequence (getVar <$> vars); --just to check whether they are actually variables
+  sequence [getVar v >>= \v' -> setProperty v' UNIVERSAL | v <- vars];
   checkUniversalsUnbound (olist vars);
 }
 
