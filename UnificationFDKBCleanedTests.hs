@@ -13,7 +13,7 @@ bounds = ["=","->","^","v","bot",":","[]",
           "append", "length", "zero", "suc", "list", "consteq",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "1","2","3","4","5","6","7","8","9"]
-          
+
 stdTest = stdTest' bounds
 
 testkb1 = [["a","a v b"],["b", "a v b"], ["bot", "a"]]
@@ -91,7 +91,6 @@ testIneqKB = [["constant true"],
               []] -- ...
 --WARNING: (consteq x y) -> bot can only be used for backward reasoning iff there is a finite number of constants. in other cases, prolly new constants would need to be allowed creating...
 testIneqGoal = ["(true = false) -> bot"]
-<<<<<<< HEAD
 
 
 testImplKB = [["x = x"],["x = x"],
@@ -106,5 +105,3 @@ testImplGoal = ["(A = bot) -> (F bot) -> (F A)", "A = top"]
 testImplKB2 = []
 testImplGoal2 = ["A -> (A -> B) -> B"]
 --TODO: Have existential and universal variables! Not gonna work otherwise!
-=======
->>>>>>> b502f85f0ffabb4eebc3ced525ddadfd6e3f699b
