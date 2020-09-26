@@ -26,11 +26,11 @@ testgoal1 = ([],["a v b"]) --as we want actual assignments for a and b, they are
 testkb2 = []
 testgoal2 = ([],["bot -> a"]) --as we want actual assignments for a, it is not universal
 
-testkb3 = [           (["y"],["append [] y y"]),
-            (["xs","y","ys"],["append xs y ys","append (xs : x) y (ys : x)"]),
-                         ([],["length [] zero"]),
-             (["xs","i","x"],["length xs i", "length (xs : x) (suc i)"])]
-testgoal3 = ([],["append ([] : b : a) ([] : a) x", "length x y"])
+testkb3 = [            "forall y (append [] y y)",
+           "forall (x xs y ys) ( (append xs y ys) -> (append (xs : x) y (ys : x)) )",
+                              "length [] zero",
+           "forall (x xs i) ( (length xs i) -> (length (xs : x) (suc i)) )"]
+testgoal3 = ["append ([] : b : a) ([] : a) x", "length x y"]
 
 
 testkb4 = [(["A"],["Test A"]),

@@ -28,19 +28,16 @@ matchUniversalBinding trm = do {
 
 applyUniversalCriterion :: (Monad m) => [OpenTerm] -> IntBindMonQuanT m ()
 applyUniversalCriterion vars = do {
-  sequence (getVar <$> vars);
+  --sequence (getVar <$> vars); --just to check whether they are actually variables
   checkUniversalsUnbound (olist vars);
 }
 
 instantiateUniversality :: (Monad m) => OpenTerm -> IntBindMonQuanT m OpenTerm
 instantiateUniversality trm = catchE (lookout $ do {
   (vars,t) <- matchUniversalBinding trm;
-  applyUniversalCriterion vars;
+  applyBindingsAll vars >>= applyUniversalCriterion; --makes sure the vars are set to their proper representatives
   return t
 }) (\e -> return trm)
 
 readRawKB :: (Monad m) => RawKB -> IntBindMonQuanT m KB
-readRawKB trms = sequence [ do {
-  tinst <- instantiateUniversality t;
-  matchClauseStructure tinst;
-} | t <- trms]
+readRawKB trms = sequence [ instantiateUniversality t >>= matchClauseStructure | t <- trms]

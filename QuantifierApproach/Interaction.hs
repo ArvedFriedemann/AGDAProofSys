@@ -36,15 +36,13 @@ interactiveProofPreread goals = do {
 }
 
 interactiveProof' :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProof' goals = do {
-  --instantiate goal universals that haven't been intantiated yet
-  --TODO: this should be some general step
-  goals' <- instantiateGoals goals;
-  goals'' <- propagateProof goals' >>= instantiateGoals;
-  interactiveProof'' goals''
-}
+interactiveProof' goals = return goals >>=
+                          instantiateGoals >>=
+                          --propagateProof >>=
+                          --instantiateGoals >>=
+                          interactiveProof''
 
-instantiateGoals :: [(KB,OpenTerm)] -> IntBindMonQuanT IO [(KB,OpenTerm)]
+instantiateGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
 instantiateGoals goals = sequence [do {
   --TODO: the KB might also need to get its universals applied at some point
   g <- instantiateUniversality gs;
@@ -87,7 +85,7 @@ propagateProof goals = do {
   possm <- proofPossibilities goals;
   midx <- return $ possMapIndexOfFirstSingleton possm;
   case midx of
-    Just idx -> applyProofAction possm idx >>= propagateProof
+    Just idx -> applyProofAction possm idx >>= instantiateGoals >>= propagateProof
     Nothing -> return goals
 }
 
