@@ -19,9 +19,15 @@ type PossMap a b = [(a,[b])]
 type GoalToPossMap m = PossMap (KB,OpenTerm) (Clause, IntBindMonQuanT m Clause)
 type IdxGoalToPossMap m = PossMap (KB,OpenTerm) (Int, (Clause, IntBindMonQuanT m Clause))
 
+interactiveProof :: [(RawKB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProof goals = do  {
+  goals' <- sequence $ [readRawKB kb >>= \kb' -> return (kb', gs) |(kb,gs) <- goals];
+  interactiveProofPreread goals';
+}
+
 --TODO: also make interactveProofStep
-interactiveProof :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProof goals = do {
+interactiveProofPreread :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProofPreread goals = do {
   interactiveProof' goals;
   lift3 $ putStrLn "Original goals:";
   aplGoals <- applyBindingsAll (snd <$> goals);
@@ -34,8 +40,8 @@ interactiveProof' goals = do {
   --instantiate goal universals that haven't been intantiated yet
   --TODO: this should be some general step
   goals' <- instantiateGoals goals;
-  --goals'' <- propagateProof goals' >>= instantiateGoals;
-  interactiveProof'' goals'--WARNING
+  goals'' <- propagateProof goals' >>= instantiateGoals;
+  interactiveProof'' goals''
 }
 
 instantiateGoals :: [(KB,OpenTerm)] -> IntBindMonQuanT IO [(KB,OpenTerm)]

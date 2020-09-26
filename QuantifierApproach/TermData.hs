@@ -41,6 +41,7 @@ data VarProp = UNIVERSAL | EXISTENTIAL | NEUTRAL deriving (Show, Eq)
 
 type Clause = ([OpenTerm], OpenTerm)
 type KB = [Clause]
+type RawKB = [OpenTerm]
 
 instance Fallible t v (CustomError t v) where
   occursFailure v t     = OccursFailure v t

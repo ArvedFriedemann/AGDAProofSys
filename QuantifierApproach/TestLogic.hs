@@ -11,7 +11,7 @@ import Data.Set as Set
 import Control.Monad
 import Control.Monad.Trans
 
-type StringKB = [([String],[String])] --every clause needs to carry its universal variables
+type StringRawKB = [String]
 
 binds = \bounds -> (bindConstTo $ Map.fromList [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT), ("forall", FORALL),("exists", EXISTS)]).(bindConst bounds)
 stdrd = \bounds -> (binds bounds).rt
@@ -28,14 +28,12 @@ stdcrt bounds universals = (createOpenTerm $ stdVarProp universals).(stdrd bound
 stdcrtAll :: (Monad m) => [String] -> [String] ->  [String] -> IntBindMonQuanT m [OpenTerm]
 stdcrtAll bounds universals trms = createOpenTerms (stdVarProp universals) ((stdrd bounds) <$> trms)
 
-stdkb :: (Monad m) => [String] -> StringKB -> IntBindMonQuanT m KB
-stdkb bounds stringkb = do {
-  sequence $ [listToClause <$> (createOpenTerms (stdVarProp univ) ((stdrd bounds) <$> clst)) | (univ, clst) <- stringkb]
-}
+stdkb :: (Monad m) => [String] -> StringRawKB -> IntBindMonQuanT m RawKB
+stdkb bounds stringkb = sequence $ [stdcrt bounds [] cls | cls <- stringkb]
 
-stdTest' :: [String] -> StringKB -> ([String],[String]) -> IO (Either MError ())
-stdTest' bounds strkb (goaluniv, goaltrms) = runIntBindQuanT $ do {
-  goals <- stdcrtAll bounds goaluniv goaltrms;
+stdTest' :: [String] -> StringRawKB -> [String] -> IO (Either MError ())
+stdTest' bounds strkb goals = runIntBindQuanT $ do {
+  goals <- stdcrtAll bounds [] goals;
   kb <- stdkb bounds strkb;
   interactiveProof [(kb, g) | g <- goals]
 }

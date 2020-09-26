@@ -36,7 +36,11 @@ instantiateUniversality :: (Monad m) => OpenTerm -> IntBindMonQuanT m OpenTerm
 instantiateUniversality trm = catchE (lookout $ do {
   (vars,t) <- matchUniversalBinding trm;
   applyUniversalCriterion vars;
-
-  traceM $ show $ oTToString <$> vars;
   return t
 }) (\e -> return trm)
+
+readRawKB :: (Monad m) => RawKB -> IntBindMonQuanT m KB
+readRawKB trms = sequence [ do {
+  tinst <- instantiateUniversality t;
+  matchClauseStructure tinst;
+} | t <- trms]
