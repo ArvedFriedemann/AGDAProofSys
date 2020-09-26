@@ -21,8 +21,7 @@ matchUniversalBinding trm = do {
   b <- lift $ freshVar;
   ot <- return $ olist [con FORALL, a, b];
   unifySubsumes ot trm;
-  hopefullyVars <- matchBinApplLAssocList a;
-  traceM $ show $ oTToString <$> hopefullyVars;
+  hopefullyVars <- applyBindings a >>= matchBinApplLAssocList;
   b' <- applyBindings b; -- TODO
   return (hopefullyVars, b')
 }

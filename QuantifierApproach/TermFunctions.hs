@@ -125,17 +125,13 @@ matchBinConst cst term = do {
                               b <- lift $ freshVar;
                               ot <- return $ olist [a, con cst, b];
                               unifySubsumes ot term; --TODO: Maybe term needs to be extracted...
-                              --TODO! Bindings should not need to be applied!
-                              lst <- applyBindingsAll [a,b];
-                              case lst of
-                                [a',b'] -> return (a',b')
-                                _ -> error "should not happen"
+                              return (a,b)
                             }
 
 matchBinConstLAssocList :: (Monad m) => Constant -> OpenTerm -> IntBindMonQuanT m [OpenTerm]
 matchBinConstLAssocList cst term = catchE (do {
   (a,b) <- matchBinConst cst term;
-  lst <- matchBinConstLAssocList cst a;
+  lst <- applyBindings a >>= matchBinConstLAssocList cst; --TODO: applying should not be necessary!
   return $ lst ++ [b];
 }) (const $ return [term])
 
@@ -151,7 +147,7 @@ matchBinAppl term = do {
 matchBinApplLAssocList :: (Monad m) => OpenTerm -> IntBindMonQuanT m [OpenTerm]
 matchBinApplLAssocList term = catchE (do {
   (a,b) <- matchBinAppl term;
-  lst <- applyBindings a >>= matchBinApplLAssocList; --TODO: this should not be necessary!
+  lst <- applyBindings a >>= matchBinApplLAssocList; --TODO: applying should not be necessary!
   return $ lst ++ [b];
 }) (const $ return [term])
 

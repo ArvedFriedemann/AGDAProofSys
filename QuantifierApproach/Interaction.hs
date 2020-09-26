@@ -36,8 +36,8 @@ interactiveProofPreread goals = do {
 interactiveProof' :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof' goals = return goals >>=
                           instantiateGoals >>=
-                          --propagateProof >>=
-                          --instantiateGoals >>=
+                          propagateProof >>=
+                          instantiateGoals >>=
                           interactiveProof''
 
 instantiateGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]

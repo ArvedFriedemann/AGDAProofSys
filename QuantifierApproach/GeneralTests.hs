@@ -93,3 +93,11 @@ matchbinappllassoclisttest1 = runIntBindQuanT $ do {
   tss <- sequence (oTToStringVP <$> ts);
   lift3 $ putStrLn $ unlines tss;
 }
+
+matchbinconstlassoclisttest1 = runIntBindQuanT $ do {
+  t1 <- stdcrt bounds [] "a -> b -> c -> d -> e -> f";
+  oTToStringVP t1 >>= (lift3.putStrLn);
+  ts <- matchBinConstLAssocList IMPL t1 >>= applyBindingsAll;
+  tss <- sequence (oTToStringVP <$> ts);
+  lift3 $ putStrLn $ unlines tss;
+}
