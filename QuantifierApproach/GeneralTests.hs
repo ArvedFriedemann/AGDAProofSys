@@ -39,11 +39,15 @@ testkb4 = [(["A"],["Test A"]),
               ([],["Test bot"])]
 testgoal4 = (["A","B","C"],["Test A", "Test B", "Test2 B C"])
 
-testkb5 = ["Test A",
+testkb5 = ["forall A (Test A)",
            "(forall (A B) (Test A)) -> Test3"]
            --should be: ([],["foall X . Test X", "Test3"])
 testgoal5 = ["Test3"]
 --TODO! This does not work. There is a difference between (forall a. Test a) -> K and forall a. (Test a -> K). This is the reason universals are needed as terms! Only the top most of them should be evaluated during inference!
+
+testkb5' = ["forall A ((Test A) -> (Test (Test A)))"]
+           --should be: ([],["foall X . Test X", "Test3"])
+testgoal5' = ["Test A"]
 
 testkb6 = [([],["(P,X) in KB","solve X with KB as P"]),
            ([],["solve (Q -> X) with KB as QX",

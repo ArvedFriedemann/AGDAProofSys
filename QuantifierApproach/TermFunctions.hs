@@ -79,6 +79,15 @@ fromOpenTerm (UVar i) = CVAR i
 fromOpenTerm (UTerm (CONST c)) = CCONST c
 fromOpenTerm (UTerm (APPL a b)) = CAPPL (fromOpenTerm a) (fromOpenTerm b)
 
+fromOpenTermVP :: (Monad m) => OpenTerm -> IntBindMonQuanT m (CTerm (IntVar,VarProp))
+fromOpenTermVP v@(UVar i) = getProperty i >>= \vp -> return $ CVAR (i,vp)
+fromOpenTermVP (UTerm (CONST c)) = return $ CCONST c
+fromOpenTermVP (UTerm (APPL a b)) = do {
+  a' <- fromOpenTermVP a;
+  b' <- fromOpenTermVP b;
+  return $ CAPPL a' b'
+}
+
 createOpenTerm :: (Monad m, Ord a) => (a -> VarProp) -> CTerm a -> IntBindMonQuanT m OpenTerm
 createOpenTerm props term = head <$> createOpenTerms props [term]
 

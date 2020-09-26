@@ -53,20 +53,26 @@ giveNiceNames t = applyCBind asm t
 ppCTerm :: CTerm String -> String
 ppCTerm t = execWriter $ ppCTerm' t
 
-ppCTerm' :: CTerm String -> Writer String ()
-ppCTerm' (CCONST TOP) = tell "T"
-ppCTerm' (CCONST BOT) = tell "()"
-ppCTerm' (CCONST EQT) = tell "="
-ppCTerm' (CCONST NEQ) = tell "/="
-ppCTerm' (CCONST IMPL) = tell "->"
-ppCTerm' (CCONST CONJ) = tell "^"
-ppCTerm' (CCONST DISJ) = tell "v"
-ppCTerm' (CCONST FORALL) = tell "forall"
-ppCTerm' (CCONST EXISTS) = tell "exists"
-ppCTerm' (CCONST (CON s)) = tell s
-ppCTerm' (CVAR v) = tell v
-ppCTerm' (CAPPL a b@(CAPPL a' b')) = ppCTerm' a >> tell " (" >> ppCTerm' b >> tell ")"
-ppCTerm' (CAPPL a b) = ppCTerm' a >> tell " " >> ppCTerm' b
+ppCTermVP :: Map String VarProp -> CTerm String -> String
+ppCTermVP m t = execWriter $ ppCTerm' m t
+
+ppCTerm' :: Map String VarProp -> CTerm String -> Writer String ()
+ppCTerm' _ (CCONST TOP) = tell "T"
+ppCTerm' _ (CCONST BOT) = tell "()"
+ppCTerm' _ (CCONST EQT) = tell "="
+ppCTerm' _ (CCONST NEQ) = tell "/="
+ppCTerm' _ (CCONST IMPL) = tell "->"
+ppCTerm' _ (CCONST CONJ) = tell "^"
+ppCTerm' _ (CCONST DISJ) = tell "v"
+ppCTerm' _ (CCONST FORALL) = tell "forall"
+ppCTerm' _ (CCONST EXISTS) = tell "exists"
+ppCTerm' _ (CCONST (CON s)) = tell s
+ppCTerm' m (CVAR v) = case Map.lookup v m of
+                        Just UNIVERSAL -> tell "*" >> tell v
+                        Just _ -> tell v
+                        Nothing -> tell v
+ppCTerm' m (CAPPL a b@(CAPPL a' b')) = ppCTerm' m a >> tell " (" >> ppCTerm' m b >> tell ")"
+ppCTerm' m (CAPPL a b) = ppCTerm' m a >> tell " " >> ppCTerm' m b
 
 bindConst :: [String] -> CTerm String -> CTerm String
 bindConst lst = bindConstTo (Map.fromList $ (\x -> (x, CON x)) <$> lst)
@@ -82,7 +88,18 @@ bindConstTo bnds (CVAR x) = case lookup x bnds of
 bindConstTo bnds (CAPPL a b) = CAPPL (bindConstTo bnds a) (bindConstTo bnds b)
 
 oTToString :: OpenTerm -> String
-oTToString t = ppCTerm $ giveNiceIntNames $ fromOpenTerm t
+oTToString t = ppCTerm (Map.empty) $ giveNiceIntNames $ fromOpenTerm t
+
+oTToStringMap :: Map String VarProp -> OpenTerm -> String
+oTToStringMap m t = ppCTerm m $ giveNiceIntNames $ fromOpenTerm t
+
+oTToStringVP :: (Monad m) => OpenTerm -> IntBindMonQuanT m String
+oTToStringVP ot = do {
+  ct <- fromOpenTermVP ot;
+  propmap <- return $ Map.fromList $ Set.toList $ cvars ct;
+  oTToStringMap propmap ot
+}
+
 
 -------------------------
 --Parsing
