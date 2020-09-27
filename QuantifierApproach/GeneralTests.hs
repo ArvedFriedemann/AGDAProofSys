@@ -19,13 +19,13 @@ bounds = ["=","->","^","v","bot",":","[]",
 
 stdTest = stdTest' bounds
 
-testkb1 = [(["a","b"],["a","a v b"]),
-           (["a","b"],["b", "a v b"]),
-           (["a"],["bot", "a"])]
-testgoal1 = ([],["a v b"]) --as we want actual assignments for a and b, they are not universal
+testkb1 = ["forall (a b) (a -> (a v b))",
+           "forall (a b) (b -> (a v b))",
+           "forall a (bot -> a)"]
+testgoal1 = ["a v b"] --as we want actual assignments for a and b, they are not universal
 
 testkb2 = []
-testgoal2 = ([],["bot -> a"]) --as we want actual assignments for a, it is not universal
+testgoal2 = ["bot -> a"] --as we want actual assignments for a, it is not universal
 
 testkb3 = [            "forall y (append [] y y)",
            "forall (x xs y ys) ( (append xs y ys) -> (append (xs : x) y (ys : x)) )",
@@ -34,20 +34,11 @@ testkb3 = [            "forall y (append [] y y)",
 testgoal3 = ["append ([] : b : a) ([] : a) x", "length x y"]
 
 
-testkb4 = [(["A"],["Test A"]),
-           (["A"],["Test2 A A"]),
-           (["A","B"],["Test2 A B"]),
-              ([],["Test bot"])]
-testgoal4 = (["A","B","C"],["Test A", "Test B", "Test2 B C"])
-
 testkb5 = ["forall A (Test A)",
-           "(forall (A B) (Test A)) -> Test3"]
-           --should be: ([],["foall X . Test X", "Test3"])
-testgoal5 = ["Test3"]
---TODO! This does not work. There is a difference between (forall a. Test a) -> K and forall a. (Test a -> K). This is the reason universals are needed as terms! Only the top most of them should be evaluated during inference!
+           "Test Test"]
+testgoal5 = ["forall A (Test A)"]
 
 testkb5' = ["forall A ((Test A) -> (Test (Test A)))"]
-           --should be: ([],["foall X . Test X", "Test3"])
 testgoal5' = ["Test A"]
 
 testkb6 = [([],["(P,X) in KB","solve X with KB as P"]),
