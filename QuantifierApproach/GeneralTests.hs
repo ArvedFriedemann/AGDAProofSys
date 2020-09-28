@@ -7,6 +7,7 @@ import TermFunctions
 import FreshenQuantifier
 import InferenceRules
 import SpecialMatches
+import Quoting
 
 import Control.Unification
 import Control.Monad.Trans
@@ -91,4 +92,12 @@ matchbinconstlassoclisttest1 = runIntBindQuanT $ do {
   ts <- matchBinConstLAssocList IMPL t1 >>= applyBindingsAll;
   tss <- sequence (oTToStringVP <$> ts);
   lift3 $ putStrLn $ unlines tss;
+}
+
+quotetest1 = runIntBindQuanT $ do {
+  kb <- stdkb bounds ["forall X (X = X)","forall (op X) ((refl op) -> (X op X))"] >>= readRawKB;
+  qkb <- quoteKBVP kb;
+  lift3 $ putStrLn $ oTToString $ qkb;
+  uqkb <- unquoteTermVP qkb;
+  oTToStringVP uqkb >>= (lift3.putStrLn);
 }

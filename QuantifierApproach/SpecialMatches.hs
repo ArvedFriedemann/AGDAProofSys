@@ -19,7 +19,7 @@ matchUniversalBinding :: (Monad m) => OpenTerm -> IntBindMonQuanT m ([OpenTerm],
 matchUniversalBinding trm = do {
   a <- lift $ freshVar;
   b <- lift $ freshVar;
-  ot <- return $ olist [con FORALL, a, b];
+  ot <- return $ olist [con (VP UNIVERSAL), a, b];
   unifySubsumes ot trm;
   hopefullyVars <- applyBindings a >>= matchBinApplLAssocList;
   b' <- applyBindings b; -- TODO

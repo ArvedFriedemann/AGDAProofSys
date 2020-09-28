@@ -73,9 +73,12 @@ ppCTerm' _ (CCONST NEQ) = tell "/="
 ppCTerm' _ (CCONST IMPL) = tell "->"
 ppCTerm' _ (CCONST CONJ) = tell "^"
 ppCTerm' _ (CCONST DISJ) = tell "v"
-ppCTerm' _ (CCONST FORALL) = tell "forall"
-ppCTerm' _ (CCONST EXISTS) = tell "exists"
+ppCTerm' _ (CCONST (VP UNIVERSAL)) = tell "forall"
+ppCTerm' _ (CCONST (VP EXISTENTIAL)) = tell "exists"
+ppCTerm' _ (CCONST (VP NEUTRAL)) = tell "neutral"
+ppCTerm' _ (CCONST NAME) = tell "name"
 ppCTerm' _ (CCONST (CON s)) = tell s
+ppCTerm' _ (CCONST (ID v)) = tell $ show v
 ppCTerm' m (CVAR v) = case Map.lookup v m of
                         Just UNIVERSAL -> tell "*" >> tell v
                         Just _ -> tell v
