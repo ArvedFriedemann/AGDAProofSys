@@ -56,8 +56,13 @@ testkb = [
   "   (executeRec f with lst  in implctx into x)",
 
   "solve : Solver", --explicitly no forall! This thing should be unique!
-  "solve goal on kb with proof"
+  "solve goal on kb with proof",
   --if the solver is modeled as a function that always has to be specifically executed this becomes kinda cumbersome. Maybe determinism criterion should be enough, combined with some lookahead? Important thing is just that the KB can change...
+
+  --TODO: Better: define when a predicate is deterministic on a certain KB, and that the aim is to find the right KB for the job
+  --TODO: Determinism in execution only possible if no two rules overlap
+  --TODO: The problem needs to be expressed on the actual state object...with unassigned variables and stuff...
+  "solve goal on kb in state with proof" --the state expresses which variables are assigned. This could also be done by assigning all unassigned variables with some constant 'unassigned'. 
 
 ]
 testgoal = ["a v b"]
