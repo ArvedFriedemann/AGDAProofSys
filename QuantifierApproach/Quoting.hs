@@ -3,12 +3,14 @@ module Quoting where
 import TermData
 import TermFunctions
 import Util
+import Printing
 
 import Control.Unification
 import Control.Unification.IntVar
 import Control.Applicative
 import Control.Monad.Trans
 import Control.Monad.Trans.Except
+import Debug.Trace
 
 --returns a term where all variables have been replaced by their id constants. Should be done on applied terms
 quoteTerm :: OpenTerm -> OpenTerm
@@ -38,8 +40,8 @@ matchVPVar trm = do {
   return (a,b)
 }
 
-unquoteTermVP :: (Monad m) => OpenTerm -> IntBindMonQuanT m OpenTerm
-unquoteTermVP trm = catchE (do {
+matchVPVar' :: (Monad m) => OpenTerm -> IntBindMonQuanT m (VarProp, IntVar)
+matchVPVar' trm = do {
   (tp, tid) <- matchVPVar trm;
   tpa <- applyBindings tp;
   tida <- applyBindings tid;
@@ -49,6 +51,12 @@ unquoteTermVP trm = catchE (do {
   iD <- (case tida of
           (UTerm (CONST (ID i))) -> return i
           _ -> throwE (CustomError "not a var id") ) ;
+  return (vp, iD)
+}
+
+unquoteTermVP :: (Monad m) => OpenTerm -> IntBindMonQuanT m OpenTerm
+unquoteTermVP trm = catchE (do {
+  (vp,iD) <- matchVPVar' trm;
   setProperty iD vp; --WARNING! This might override existing var properties...
   return (UVar iD)
 }) (const $ catchE (do {
@@ -57,6 +65,24 @@ unquoteTermVP trm = catchE (do {
   b' <- applyBindings b >>= unquoteTermVP;
   return $ UTerm (APPL a' b')
 }) (const $ return trm))
+
+
+--WARNING: might want to have a backtrack in case of failure.
+applySimpleUnquoting :: (Monad m) => OpenTerm -> IntBindMonQuanT m OpenTerm
+applySimpleUnquoting trm = do {
+  a <- lift $ freshVar;
+  b <- lift $ freshVar;
+  ot <- return $ olist [con (UNQUOTE), a, b];
+  unifySubsumes ot trm; --TODO: might need extraction...
+  (vp,iD) <- applyBindings a >>= matchVPVar'; --just to check whether its a variable
+  uq <- applyBindings a >>= unquoteTermVP;
+  unify b uq;
+}
+
+--applies unquoting goals and only returns goals that didn't unquote.
+applySUQGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+applySUQGoals goals = concat <$> sequence [catchE (tryBM (applySimpleUnquoting g) >> return []) (const $ return [(kb,g)]) | (kb,g) <- goals]
+
 
 quoteClause :: Clause -> OpenTerm
 quoteClause = quoteTerm.clauseToTerm

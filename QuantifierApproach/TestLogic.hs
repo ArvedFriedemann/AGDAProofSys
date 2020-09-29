@@ -15,7 +15,7 @@ type StringRawKB = [String]
 
 binds = \bounds -> (bindConstTo $ Map.fromList
   [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT),
-   ("forall", (VP UNIVERSAL)),("exists", (VP EXISTENTIAL)),("neutral", (VP NEUTRAL)),("name",NAME)]).(bindConst bounds)
+   ("forall", (VP UNIVERSAL)),("exists", (VP EXISTENTIAL)),("neutral", (VP NEUTRAL)),("name",NAME),("quote",QUOTE),("unquote",UNQUOTE)]).(bindConst bounds)
 stdrd = \bounds -> (binds bounds).rt
 
 stdVarProp :: (Ord a) => [a] -> a -> VarProp

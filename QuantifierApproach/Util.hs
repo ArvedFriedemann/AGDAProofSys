@@ -21,12 +21,22 @@ lookoutCatch m = lookout $ catch m
 catch :: (Monad m) => IntBindMonQuanT m a -> IntBindMonQuanT m [a]
 catch m = catchE (return <$> m) (const $ return [])
 
-lookout :: (MonadState s m) => m a -> m a
+lookout :: (Monad m) => IntBindMonQuanT m a -> IntBindMonQuanT m a
 lookout m = do {
   s <- get;
+  s' <- lift get;
   r <- m;
   put s;
+  lift $ put s';
   return r
+}
+
+--only apply state conversion if monad succeeds. fail if fails.
+tryBM :: (Monad m) => IntBindMonQuanT m a -> IntBindMonQuanT m a
+tryBM m = do {
+  s <- get;
+  s' <- lift get;
+  catchE m (\e -> put s >> lift (put s') >> throwE e)
 }
 
 isSingleton :: [a] -> Bool

@@ -6,6 +6,7 @@ import InferenceRules
 import SpecialMatches
 import Util
 import Printing
+import Quoting
 
 import Control.Unification
 import Control.Monad
@@ -38,6 +39,7 @@ interactiveProof' goals = return goals >>=
                           instantiateGoals >>=
                           propagateProof >>=
                           instantiateGoals >>=
+                          applySUQGoals >>=
                           interactiveProof''
 
 instantiateGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
@@ -69,7 +71,7 @@ applyProofAction possm idx = do {
   (prems, oldgoal') <- matchClauseStructure oldgoal;
   oldGoalsKB <- return $ map fst $ possMapRemoveKeyWithIdx idx possm;
   newGoalsKB <- return $ [((clauseFromList <$> return <$> prems)++kb, g) | g <- newGoals];
-  return (newGoalsKB ++ oldGoalsKB)
+  applySUQGoals (newGoalsKB ++ oldGoalsKB)
 }
 
 proofPossibilities :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m (GoalToPossMap m)

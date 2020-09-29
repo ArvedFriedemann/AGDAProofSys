@@ -101,3 +101,17 @@ quotetest1 = runIntBindQuanT $ do {
   uqkb <- unquoteTermVP qkb;
   oTToStringVP uqkb >>= (lift3.putStrLn);
 }
+
+quotetest2 = runIntBindQuanT $ do {
+  goal <- stdcrt bounds ["X"] "X";
+  target <- stdcrt bounds [] "X";
+  qg <- quoteTermVP goal >>= applyBindings;
+  quoteGoal <- return $ olist [con UNQUOTE, qg, target];
+  lift3 $ putStrLn $ oTToString $ qg;
+  lift3 $ putStrLn $ oTToString $ goal;
+  lift3 $ putStrLn $ oTToString $ quoteGoal;
+  uquq <- applySUQGoals [([],quoteGoal)];
+  (lift3.putStrLn) $ show $ length uquq;
+  applyBindings quoteGoal >>= oTToStringVP >>= (lift3.putStrLn);
+  applyBindings goal >>= oTToStringVP >>= (lift3.putStrLn);
+}
