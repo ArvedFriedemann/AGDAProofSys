@@ -89,6 +89,21 @@ propagateProof goals = do {
     Nothing -> return goals
 }
 
+--returns the propagated step with the META goal, together with the position of the META deduced next state.
+--TODO: problem: there is no universal solving KB
+--TODO: assignments of the solve predicate need to be applied to the real state
+propagateProofMETA :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m ([(KB, OpenTerm)], OpenTerm)
+propagateProofMETA goals = do {
+  goalkb <- return $ goalsToKB goals;
+  qg <- return $ quoteKB goals;
+  solveOutState <- lift $ freshVar;
+  solvetrm <- return $ olst [con SOLVE, qg, solveOutState];
+  newgoals <- propagateProof ((goalkb, solvetrm):goals)
+  if anythingChanged
+    then propagateProofMETA newgoals
+    else return (newgoals, solveOutState)
+}
+
 printProofPossMap :: (IdxGoalToPossMap IO) -> IntBindMonQuanT IO ()
 printProofPossMap mp = void $ sequence [ do {
   aplgoal <- applyBindings goal;

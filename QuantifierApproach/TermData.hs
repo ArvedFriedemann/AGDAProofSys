@@ -18,7 +18,7 @@ import Data.Map.Lazy as Map
 import Safe
 
 
-data Constant = TOP | BOT | NEQ | EQT | IMPL | CONJ | DISJ | VP VarProp | NAME | QUOTE | UNQUOTE | CON String | ID IntVar deriving (Show, Eq)
+data Constant = TOP | BOT | NEQ | EQT | IMPL | CONJ | DISJ | SOLVE | VP VarProp | NAME | QUOTE | UNQUOTE | CON String | ID IntVar deriving (Show, Eq)
 data Term a = CONST Constant
             | APPL a a
   deriving (Show, Eq, Functor, Foldable, Traversable)
