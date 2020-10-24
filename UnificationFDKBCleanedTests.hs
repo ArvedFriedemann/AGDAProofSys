@@ -12,7 +12,7 @@ import Control.Monad
 bounds = ["=","->","^","v","bot",":","[]",
           "append", "length", "zero", "suc", "list", "consteq",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
-          "1","2","3","4","5","6","7","8","9"]
+          "0","1","2","3","4","5","6","7","8","9"]
 
 stdTest = stdTest' bounds
 
@@ -33,13 +33,29 @@ testkb3 = [ ["x = x"],
 testgoal3 = ["list a", "list b", "a = b"]
 
 
-testkblang = [["subject (the car)"],
+testkblang0 = [["subject (the car)"],
+              ["object (the person)"],
+              ["predicate (carries)"],
+              ["subject A","predicate B", "object C","sentence (A B C)"],
+              ["subject B","predicate A", "object C","question (A B C)"]]
+testlanggoal0 = ["sentence (X Y Z)"]
+
+testkblang1 = [["subject (the car)"],
               ["subject (the moth)"],
               ["object (the person)"],
               ["predicate (carries)"],
               ["subject A","predicate B", "object C","sentence (A B C)"],
               ["subject B","predicate A", "object C","question (A B C)"]]
-testlanggoal = ["question (X Y Z)"]
+testlanggoal1 = ["sentence (X Y Z)"]
+
+testkblang2 = [["x = x"],
+              ["subject (the car)"],
+              ["subject (the moth)"],
+              ["object (the person)"],
+              ["predicate (carries)"],
+              ["subject A","predicate B", "object C","sentence (A B C)"],
+              ["subject B","predicate A", "object C","question (A B C)"]]
+testlanggoal2 = ["sentence (X Y Z)", "X = (the moth)"]
 
 testkbsudoku = [["x = x"],
                 ["member_rem A (AS : A) AS"],
@@ -69,6 +85,15 @@ testkbsudokusmall = [["x = x"],
                         "permut p ([] : x21 : x22)",
                         "sudoku (x11 x12 x21 x22)"]]
 testsudokugoalsmall = ["sudoku (x11 x12 x21 x22)"]
+
+testkbsudokutiny = [["alldiff 0 1"],
+                    ["alldiff 1 0"],
+                    ["alldiff x11 x12",
+                     "alldiff x21 x22",
+                     "alldiff x11 x21",
+                     "alldiff x12 x22",
+                      "sudoku (x11 x12 x21 x22)"]]
+testsudokugoaltiny = ["sudoku (x11 x12 x21 x22)"]
 
 
 --easy solution: propagate equalities in KBs. Valid eqs vanish, invalid ones deduce bot.
