@@ -10,6 +10,7 @@ import Quoting
 
 import Control.Unification
 import Control.Monad
+import Control.Monad.Trans
 import Debug.Trace
 import Data.List
 
@@ -38,6 +39,7 @@ interactiveProof' :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof' goals = return goals >>=
                           instantiateGoals >>=
                           propagateProof >>=
+                          propagateProof' >>=
                           instantiateGoals >>=
                           applySUQGoals >>=
                           interactiveProof''
@@ -80,6 +82,13 @@ proofPossibilities kbgoals = sequence [do {
   return ((kb,g), bwp)
 } | (kb,g) <- kbgoals]
 
+propagateProof' :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+propagateProof' goals = do {
+  (newgoals, newstate) <- propagateProofMETA [] goals;
+  --TODO: Idea is good, but this will not update the state when deductions are made
+  unquoteTermVP newstate >>= matchGoalStructure >>= \x -> return $ x ++ newgoals;
+}
+
 propagateProof :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateProof goals = do {
   possm <- proofPossibilities goals;
@@ -92,16 +101,17 @@ propagateProof goals = do {
 --returns the propagated step with the META goal, together with the position of the META deduced next state.
 --TODO: problem: there is no universal solving KB
 --TODO: assignments of the solve predicate need to be applied to the real state
-propagateProofMETA :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m ([(KB, OpenTerm)], OpenTerm)
-propagateProofMETA goals = do {
-  goalkb <- return $ goalsToKB goals;
-  qg <- return $ quoteKB goals;
+propagateProofMETA :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m ([(KB, OpenTerm)], OpenTerm)
+propagateProofMETA solvekb goals  = do {
+  qg <- quoteTermVP $ goalsToTerm goals;
   solveOutState <- lift $ freshVar;
-  solvetrm <- return $ olst [con SOLVE, qg, solveOutState];
-  newgoals <- propagateProof ((goalkb, solvetrm):goals)
-  if anythingChanged
-    then propagateProofMETA newgoals
-    else return (newgoals, solveOutState)
+  solvetrm <- return $ olist [con SOLVE, qg, solveOutState];
+  newgoals <- propagateProof ((solvekb, solvetrm):goals);
+  --we'll do the infinite recursive call later...
+  --if anythingChanged
+  --  then propagateProofMETA newgoals
+  --  else return (newgoals, solveOutState)
+  return (newgoals, solveOutState)
 }
 
 printProofPossMap :: (IdxGoalToPossMap IO) -> IntBindMonQuanT IO ()

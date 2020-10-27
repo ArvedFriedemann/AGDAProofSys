@@ -170,6 +170,12 @@ clauseToTerm cls = oplist (con IMPL) (clauseToList cls)
 kbToTerm :: KB -> OpenTerm
 kbToTerm kb = oplist (con CONJ) (clauseToTerm <$> kb)
 
+goalsToKB :: [(KB, OpenTerm)] -> KB
+goalsToKB goals = (\(kb, goal) -> clauseFromList $ (clauseToTerm <$> kb) ++ [goal]) <$> goals
+
+goalsToTerm :: [(KB, OpenTerm)] -> OpenTerm
+goalsToTerm = kbToTerm.goalsToKB
+
 modifyAsList :: (Monad m) => ([OpenTerm] -> m [OpenTerm]) -> Clause -> m Clause
 modifyAsList fkt cls = clauseFromList <$> fkt (clauseToList cls)
 
