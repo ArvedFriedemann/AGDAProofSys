@@ -50,6 +50,16 @@ testkb6 = [([],["(P,X) in KB","solve X with KB as P"]),
             ([],["KB union {A} is KB'","solve B with KB' as b","solve (A -> B) with KB as (a = b)"])]
 testgoal6 = []
 
+--TODO: This is where the solving KB is explicitly needed!
+--also NOTE: I found out how goals can be encoded as implications and that the next state goals can just be added as normal goals, which just need to be lazily unquoted...that might be some huge convenience
+testkb7 = ["forall (a b) (a -> (a v b))",
+           "forall (a b) (b -> (a v b))",
+           "forall (a b) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
+                    "((name forall b) -> ((name forall a) v (name forall b))) -> "++
+                    "((name forall a) v (name forall b))" ++
+           ") ((name forall a)) )"]
+testgoal7 = ["a v b"] --as we want actual assignments for a and b, they are not universal
+
 freshentest1 = runIntBindQuanT $ do {
   t1 <- stdcrt bounds ["a"] "a b";
   t2 <- freshenUniversal t1;
