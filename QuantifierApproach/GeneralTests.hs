@@ -54,11 +54,19 @@ testgoal6 = []
 --also NOTE: I found out how goals can be encoded as implications and that the next state goals can just be added as normal goals, which just need to be lazily unquoted...that might be some huge convenience
 testkb7 = ["forall (a b) (a -> (a v b))",
            "forall (a b) (b -> (a v b))",
-           "forall (a b) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
-                    "((name forall b) -> ((name forall a) v (name forall b))) -> "++
-                    "((name forall a) v (name forall b))" ++
+           "forall (a b c p1 p2) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
+                    --c as a placeholder for the solvingterm itself
+                    "((name forall b) -> ((name forall a) v (name forall b))) -> c -> "++
+                    "((name p1 a) v (name p2 b))" ++
            ") ((name forall a)) )"]
 testgoal7 = ["a v b"] --as we want actual assignments for a and b, they are not universal
+
+testkb8 = ["Test Test"]
+testgoal8 = ["Test A"]
+
+testkb9 = testkb7
+testgoal9 = ["solve (name forall id:z4 -> (name forall id:z4 v (name forall id:z5)) -> (name forall id:z7 -> (name forall id:z6 v (name forall id:z7))) -> (solve (name forall (name forall id:z8) -> (name forall (name forall id:z8) v (name forall (name forall id:z9))) -> (name forall (name forall id:z9) -> (name forall (name forall id:z8) v (name forall (name forall id:z9)))) -> (name forall id:a1) -> (name (name forall id:a2) (name forall id:z8) v (name (name forall id:a3) (name forall id:z9)))) (name forall (name forall id:z8))) -> (name neutral id:z2 v (name neutral id:z3))) d1", "unquote d1 d2", "d2"]
+--TODO: fix inline unquoting maybe?
 
 freshentest1 = runIntBindQuanT $ do {
   t1 <- stdcrt bounds ["a"] "a b";

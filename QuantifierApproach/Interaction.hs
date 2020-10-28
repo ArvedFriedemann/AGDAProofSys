@@ -21,28 +21,31 @@ type PossMap a b = [(a,[b])]
 type GoalToPossMap m = PossMap (KB,OpenTerm) (Clause, IntBindMonQuanT m Clause)
 type IdxGoalToPossMap m = PossMap (KB,OpenTerm) (Int, (Clause, IntBindMonQuanT m Clause))
 
-interactiveProof :: [(RawKB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProof goals = (sequence $ [readRawKB kb >>= \kb' -> return (kb', gs) |(kb,gs) <- goals]) >>=
-                          interactiveProofPreread
+interactiveProof :: RawKB -> [(RawKB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProof solvekb goals = do {
+  goals' <- sequence $ [readRawKB kb >>= \kb' -> return (kb', gs) |(kb,gs) <- goals];
+  solvekb' <- readRawKB solvekb;
+  interactiveProofPreread solvekb' goals'
+}
 
 --TODO: also make interactveProofStep
-interactiveProofPreread :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProofPreread goals = do {
-  interactiveProof' goals;
+interactiveProofPreread :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProofPreread solvekb goals = do {
+  interactiveProof' solvekb goals;
   lift3 $ putStrLn "Original goals:";
   aplGoals <- applyBindingsAll (snd <$> goals);
   sequence $ (lift3.putStrLn.oTToString) <$> aplGoals;
   return ()
 }
 
-interactiveProof' :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProof' goals = return goals >>=
+interactiveProof' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProof' solvekb goals = return goals >>=
                           instantiateGoals >>=
                           propagateProof >>=
-                          propagateProof' >>=
+                          propagateProof' solvekb >>=
                           instantiateGoals >>=
                           applySUQGoals >>=
-                          interactiveProof''
+                          interactiveProof'' solvekb
 
 instantiateGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
 instantiateGoals goals = sequence [do {
@@ -52,18 +55,17 @@ instantiateGoals goals = sequence [do {
   return (kb, g')
 } | (kb, gs) <- goals]
 
-interactiveProof'' :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProof'' [] = return ()
-interactiveProof'' goals = do {
+interactiveProof'' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProof'' _ []  = return ()
+interactiveProof'' solvekb goals = do {
   possm <- proofPossibilities goals;
   printProofPossMap (possMapToIndices possm);
-
   possmlen <- return $ possMapLength possm;
 
   idx <- lift3 $ readLn;
   if (0 <= idx) && (idx < possmlen)
-  then applyProofAction possm idx >>= interactiveProof'
-  else (lift3 $ putStrLn "invalid Index...") >> interactiveProof' goals
+  then applyProofAction possm idx >>= interactiveProof' solvekb
+  else (lift3 $ putStrLn "invalid Index...") >> interactiveProof' solvekb goals
 }
 
 applyProofAction :: (Monad m) => GoalToPossMap m -> Int -> IntBindMonQuanT m [(KB,OpenTerm)]
@@ -82,16 +84,17 @@ proofPossibilities kbgoals = sequence [do {
   return ((kb,g), bwp)
 } | (kb,g) <- kbgoals]
 
-propagateProof' :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
-propagateProof' goals = do {
-  (newgoals, newstate) <- propagateProofMETA [] goals;
+propagateProof' :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+propagateProof' _ [] = return []
+propagateProof' solvekb goals = do {
+  (newgoals, newstate) <- propagateProofMETA solvekb goals;
   --TODO: Idea is good, but this will not update the state when deductions are made
   unquoteTermVP newstate >>= matchGoalStructure >>= \x -> return $ x ++ newgoals;
 }
 
 propagateProof :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateProof goals = do {
-  possm <- proofPossibilities goals;
+  possm <- applySUQGoals goals >>= proofPossibilities ;
   midx <- return $ possMapIndexOfFirstSingleton possm;
   case midx of
     Just idx -> applyProofAction possm idx >>= instantiateGoals >>= propagateProof
@@ -103,7 +106,7 @@ propagateProof goals = do {
 --TODO: assignments of the solve predicate need to be applied to the real state
 propagateProofMETA :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m ([(KB, OpenTerm)], OpenTerm)
 propagateProofMETA solvekb goals  = do {
-  qg <- quoteTermVP $ goalsToTerm goals;
+  qg <- applyBindings (goalsToTerm goals) >>= quoteTermVP;
   solveOutState <- lift $ freshVar;
   solvetrm <- return $ olist [con SOLVE, qg, solveOutState];
   newgoals <- propagateProof ((solvekb, solvetrm):goals);
@@ -126,6 +129,7 @@ printProofPossMap mp = void $ sequence [ do {
             clsstring <- clauseToStringVP cls';
             lift3 $ putStrLn $ "("++(show idx)++") "++ clsstring
             }| (idx, (cls, _)) <- poss];
+  lift3 $ putStrLn "----------";
 } | ((kb, goal), poss) <- mp]
 
 

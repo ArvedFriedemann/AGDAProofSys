@@ -81,7 +81,7 @@ ppCTerm' _ (CCONST QUOTE) = tell "quote"
 ppCTerm' _ (CCONST UNQUOTE) = tell "unquote"
 ppCTerm' _ (CCONST NAME) = tell "name"
 ppCTerm' _ (CCONST (CON s)) = tell s
-ppCTerm' _ (CCONST (ID v)) = tell $ show v
+ppCTerm' _ (CCONST (ID v)) = tell $ ("id:"++) $ intVarToNiceName v
 ppCTerm' m (CVAR v) = case Map.lookup v m of
                         Just UNIVERSAL -> tell "*" >> tell v
                         Just _ -> tell v

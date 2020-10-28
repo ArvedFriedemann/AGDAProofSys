@@ -14,7 +14,7 @@ import Control.Monad.Trans
 type StringRawKB = [String]
 
 binds = \bounds -> (bindConstTo $ Map.fromList
-  [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("()", BOT),("bot", BOT),
+  [("/=",NEQ),("=",EQT),("->",IMPL),("^",CONJ),("v",DISJ), ("T", TOP),("()", BOT),("bot", BOT),
    ("forall", (VP UNIVERSAL)),("exists", (VP EXISTENTIAL)),("neutral", (VP NEUTRAL)),("name",NAME),("quote",QUOTE),("unquote",UNQUOTE), ("solve", SOLVE)]).(bindConst bounds)
 stdrd = \bounds -> (binds bounds).rt
 
@@ -37,5 +37,5 @@ stdTest' :: [String] -> StringRawKB -> [String] -> IO (Either MError ())
 stdTest' bounds strkb goals = runIntBindQuanT $ do {
   goals <- stdcrtAll bounds [] goals;
   kb <- stdkb bounds strkb;
-  interactiveProof [(kb, g) | g <- goals]
+  interactiveProof kb [(kb, g) | g <- goals]
 }
