@@ -132,7 +132,8 @@ matchBinConstLAssocList :: (Monad m) => Constant -> OpenTerm -> IntBindMonQuanT 
 matchBinConstLAssocList cst term = catchE (do {
   (a,b) <- matchBinConst cst term;
   lst <- applyBindings a >>= matchBinConstLAssocList cst; --TODO: applying should not be necessary!
-  return $ lst ++ [b];
+  b' <- applyBindings b;
+  return $ lst ++ [b'];
 }) (const $ return [term])
 
 matchBinAppl :: (Monad m) => OpenTerm -> IntBindMonQuanT m (OpenTerm,OpenTerm)
@@ -148,7 +149,8 @@ matchBinApplLAssocList :: (Monad m) => OpenTerm -> IntBindMonQuanT m [OpenTerm]
 matchBinApplLAssocList term = catchE (do {
   (a,b) <- matchBinAppl term;
   lst <- applyBindings a >>= matchBinApplLAssocList; --TODO: applying should not be necessary!
-  return $ lst ++ [b];
+  b' <- applyBindings b;
+  return $ lst ++ [b'];
 }) (const $ return [term])
 
 ----------------------------------------------

@@ -4,6 +4,8 @@ import TermFunctions
 import TermData
 import Control.Monad.Trans.Except
 import Control.Monad.State
+import Control.Unification.IntVar
+
 
 
 allSucceeding :: (Monad m) => [IntBindMonQuanT m a] -> IntBindMonQuanT m [a]

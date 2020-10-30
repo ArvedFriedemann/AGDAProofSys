@@ -7,7 +7,7 @@ import TermData
 import TermFunctions
 --import InferenceRules
 
-import Control.Unification.Types
+--import Control.Unification.Types
 import Control.Unification.IntVar
 import Control.Unification
 import Text.Parsec hiding (spaces)
@@ -114,6 +114,17 @@ oTToStringVP ot = do {
   propmap <- return $ Map.fromList $ (\(x,y) -> (intVarToNiceName x, y) ) <$> (Set.toList $ cvars ct);
   return $ oTToStringMap propmap ot
 }
+
+
+
+
+errorToString :: CustomError Term IntVar -> String
+errorToString (OccursFailure v t) = "OccursFailure "++(show v)++(oTToString t)
+errorToString (MismatchFailure (APPL t1 t2) (APPL t1' t2')) = "MismatchFailure ("++(oTToString t1)++","++(oTToString t2)++") and ("++(oTToString t1')++","++(oTToString t2')++")"
+errorToString (MismatchFailure (CONST (ID v1)) (CONST (ID v2))) = "MismatchFailure (CONST id:"++(intVarToNiceName v1)++") and (CONST id:"++(intVarToNiceName v2)++")"
+errorToString (MismatchFailure (CONST c1) (CONST c2)) = "MismatchFailure (CONST "++(show c1)++") and ("++(show c2)++")"
+errorToString (UniversalBoundError v) = "UniversalBoundError " ++ (show v)
+errorToString (CustomError s) = "CustomError "++ s
 
 
 -------------------------

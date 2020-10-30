@@ -10,6 +10,7 @@ import Quoting
 
 import Control.Unification
 import Control.Monad
+import Control.Monad.Trans.Except
 import Control.Monad.Trans
 import Debug.Trace
 import Data.List
@@ -90,6 +91,7 @@ propagateProof' solvekb goals = do {
   (newgoals, newstate) <- propagateProofMETA solvekb goals;
   --TODO: Idea is good, but this will not update the state when deductions are made
   unquoteTermVP newstate >>= matchGoalStructure >>= \x -> return $ x ++ newgoals;
+  --return newgoals;
 }
 
 propagateProof :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
@@ -100,6 +102,7 @@ propagateProof goals = do {
     Just idx -> applyProofAction possm idx >>= instantiateGoals >>= propagateProof
     Nothing -> return goals
 }
+
 
 --returns the propagated step with the META goal, together with the position of the META deduced next state.
 --TODO: problem: there is no universal solving KB
