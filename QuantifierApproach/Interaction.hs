@@ -88,10 +88,7 @@ proofPossibilities kbgoals = sequence [do {
 propagateProof' :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateProof' _ [] = return []
 propagateProof' solvekb goals = do {
-  (newgoals, newstate) <- propagateProofMETA solvekb goals;
-  --TODO: Idea is good, but this will not update the state when deductions are made
-  unquoteTermVP newstate >>= matchGoalStructure >>= \x -> return $ x ++ newgoals;
-  --return newgoals;
+  propagateProofMETA solvekb goals;
 }
 
 propagateProof :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
@@ -107,17 +104,19 @@ propagateProof goals = do {
 --returns the propagated step with the META goal, together with the position of the META deduced next state.
 --TODO: problem: there is no universal solving KB
 --TODO: assignments of the solve predicate need to be applied to the real state
-propagateProofMETA :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m ([(KB, OpenTerm)], OpenTerm)
+propagateProofMETA :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateProofMETA solvekb goals  = do {
   qg <- applyBindings (goalsToTerm goals) >>= quoteTermVP;
   solveOutState <- lift $ freshVar;
   solvetrm <- return $ olist [con SOLVE, qg, solveOutState];
-  newgoals <- propagateProof ((solvekb, solvetrm):goals);
+  unquotgoal <- lift $ freshVar;
+  unquotetrm <- return $ olist [con UNQUOTE, solveOutState, unquotgoal];
+  newgoals <- propagateProof ((solvekb, unquotgoal):(solvekb, unquotetrm):(solvekb, solvetrm):goals);
   --we'll do the infinite recursive call later...
   --if anythingChanged
   --  then propagateProofMETA newgoals
   --  else return (newgoals, solveOutState)
-  return (newgoals, solveOutState)
+  return newgoals
 }
 
 printProofPossMap :: (IdxGoalToPossMap IO) -> IntBindMonQuanT IO ()
@@ -125,6 +124,7 @@ printProofPossMap mp = void $ sequence [ do {
   aplgoal <- applyBindings goal;
   aplkb <- applyKB kb;
   kbToFormatStringVP aplkb >>= (lift3.putStrLn);
+  lift3 $ putStrLn "       ------";
   gstring <- oTToStringVP aplgoal;
   lift3 $ putStrLn $ "goal ("++gstring++")       -- ("++ (show $ length poss) ++ " possibilitie(s))";
   sequence [do {
@@ -132,7 +132,7 @@ printProofPossMap mp = void $ sequence [ do {
             clsstring <- clauseToStringVP cls';
             lift3 $ putStrLn $ "("++(show idx)++") "++ clsstring
             }| (idx, (cls, _)) <- poss];
-  lift3 $ putStrLn "----------";
+  lift3 $ putStrLn "---------->>>>>>>>>>";
 } | ((kb, goal), poss) <- mp]
 
 

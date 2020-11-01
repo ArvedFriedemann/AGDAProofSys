@@ -14,6 +14,7 @@ import Control.Monad.Trans
 
 bounds = ["=","->","^","v","bot",":","[]",
           "Test", "Test2", "Test3",
+          "cA", "cB", "cC", "cD",
           "append", "length", "zero", "suc", "list", "consteq",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "1","2","3","4","5","6","7","8","9"]
@@ -52,28 +53,49 @@ testgoal6 = []
 
 --TODO: This is where the solving KB is explicitly needed!
 --also NOTE: I found out how goals can be encoded as implications and that the next state goals can just be added as normal goals, which just need to be lazily unquoted...that might be some huge convenience
+--This should traverse in two meta steps
 testkb7 = ["forall (a b) (a -> (a v b))",
            "forall (a b) (b -> (a v b))",
-           "forall (a b a' b' a'' b'' c p1 p2) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
+           "cA",
+           "forall (a b a' b' a'' b'' c d e p1 p2) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
                     --c as a placeholder for the solvingterm itself
-                    "((name forall b') -> ((name forall a') v (name forall b'))) -> c -> "++
+                    "((name forall b') -> ((name forall a') v (name forall b'))) -> c -> d -> e -> "++
                     "((name p1 a'') v (name p2 b''))" ++
-           ") ((name forall a)) )"]
+           ") ((name p1 a'')) )",
+           "forall (a b a' b' a'' b'' c d p1 p2) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
+                    --c as a placeholder for the solvingterm itself
+                    "((name forall b') -> ((name forall a') v (name forall b'))) -> c -> d -> e -> "++
+                    "(name p1 a'')" ++
+           ") (cA) )"]
 testgoal7 = ["a v b"] --as we want actual assignments for a and b, they are not universal
 
-testkb8 = ["Test Test"]
-testgoal8 = ["Test A"]
 
-testkb9 = testkb7
-testgoal9 = ["solve (name forall id:z4 -> (name forall id:z4 v (name forall id:z5)) -> (name forall id:z7 -> (name forall id:z6 v (name forall id:z7))) -> (solve (name forall (name forall id:z8) -> (name forall (name forall id:z8) v (name forall (name forall id:z9))) -> (name forall (name forall id:z9) -> (name forall (name forall id:z8) v (name forall (name forall id:z9)))) -> (name forall id:a1) -> (name (name forall id:a2) (name forall id:z8) v (name (name forall id:a3) (name forall id:z9)))) (name forall (name forall id:z8))) -> (name neutral id:z2 v (name neutral id:z3))) d1"]
+--this should traverse in just one meta step
+testkb8 = ["forall (a b) (a -> (a v b))",
+           "forall (a b) (b -> (a v b))",
+           "cA",
+           "forall (a b a' b' a'' b'' c d p1 p2) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
+                    --c as a placeholder for the solvingterm itself
+                    "((name forall b') -> ((name forall a') v (name forall b'))) -> c -> d -> "++
+                    "((name p1 a'') v (name p2 b''))" ++
+           ") (cA) )"]
+testgoal8 = ["a v b"]
+
+
+
 --TODO: fix inline unquoting maybe?
+{-
+testkb7 = [ "cA -> (cA v cB)",
+            "cB -> (cA v cB)",
+            "cA",
+            "cB -> bot",
 
-testkb10 = ["solve (name forall *z8 -> (name forall *z8 v (name forall *z9)) -> (name forall *z9 -> (name forall *z8 v (name forall *z9))) -> *a1 -> (name *a2 *z8 v (name *a3 *z9))) (name forall *z8)"]
-testgoal10 = ["solve (name forall id:z4 -> (name forall id:z4 v (name forall id:z5)) -> (name forall id:z7 -> (name forall id:z6 v (name forall id:z7))) -> (solve (name forall (name forall id:z8) -> (name forall (name forall id:z8) v (name forall (name forall id:z9))) -> (name forall (name forall id:z9) -> (name forall (name forall id:z8) v (name forall (name forall id:z9)))) -> (name forall id:a1) -> (name (name forall id:a2) (name forall id:z8) v (name (name forall id:a3) (name forall id:z9)))) (name forall (name forall id:z8))) -> (name neutral id:z2 v (name neutral id:z3))) d1"]
-
-
-
-
+            "((x = (a ^ b)) -> bot) -> x in x",
+            "((a in x) v (a in y)) -> (a in (x ^ y))",
+            --TODO: sets super hard to express
+            "(solve kb kb')"] --TODO!!!!
+testgoal7 = ["a v b"] --as we want actual assignments for a and b, they are not universal
+-}
 
 
 freshentest1 = runIntBindQuanT $ do {
