@@ -68,20 +68,32 @@ unquoteTermVP trm = catchE (do {
 
 
 --WARNING: might want to have a backtrack in case of failure.
-applySimpleUnquoting :: (Monad m) => OpenTerm -> IntBindMonQuanT m OpenTerm
+--TODO: Technically, only one quote predicate needed...unquoting is just its reverse...
+--TODO: This needs an ite construct...only if the variable doesn't match, check the others.
+applySimpleUnquoting :: (Monad m) => OpenTerm -> IntBindMonQuanT m [OpenTerm]
 applySimpleUnquoting trm = do {
   a <- lift $ freshVar;
   b <- lift $ freshVar;
   ot <- return $ olist [con (UNQUOTE), a, b];
   unifySubsumes ot trm; --TODO: might need extraction...
-  (vp,iD) <- applyBindings a >>= matchVPVar'; --just to check whether its a variable
+  apla <- applyBindings a;
+  newconstr <- (tryBM $ matchVPVar' apla >> return [])
+            <|> (tryBM $ do {
+                    (x,y) <- matchBinAppl apla;
+                     x' <- lift $ freshVar;
+                     y' <- lift $ freshVar;
+                    return [olist [con UNQUOTE, x, x'],
+                            olist [con UNQUOTE, y, y']]})
+            <|> (return []);
   uq <- applyBindings a >>= unquoteTermVP;
-  unify b uq;
+  unify b uq >> return newconstr;
 }
 
 --applies unquoting goals and only returns goals that didn't unquote.
 applySUQGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
-applySUQGoals goals = concat <$> sequence [catchE (tryBM (applySimpleUnquoting g) >> return []) (const $ return [(kb,g)]) | (kb,g) <- goals]
+applySUQGoals goals = concat <$> sequence [catchE
+  (tryBM ((map (\x -> (kb,x)) ) <$> applySimpleUnquoting g))
+  (const $ return [(kb,g)]) | (kb,g) <- goals]
 
 
 quoteClause :: Clause -> OpenTerm

@@ -37,6 +37,12 @@ data CustomError t v =  OccursFailure v (UTerm t v)
                       | UniversalBoundError v
                       | CustomError String
 
+instance Monoid (CustomError t v) where
+  mempty = CustomError ""
+
+instance Semigroup (CustomError t v) where
+  err1 <> err2 = err2
+
 data VarProp = UNIVERSAL | EXISTENTIAL | NEUTRAL deriving (Show, Eq, Ord)
 
 type Clause = ([OpenTerm], OpenTerm)
