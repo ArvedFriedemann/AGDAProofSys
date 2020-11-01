@@ -70,30 +70,32 @@ unquoteTermVP trm = catchE (do {
 --WARNING: might want to have a backtrack in case of failure.
 --TODO: Technically, only one quote predicate needed...unquoting is just its reverse...
 --TODO: This needs an ite construct...only if the variable doesn't match, check the others.
-applySimpleUnquoting :: (Monad m) => OpenTerm -> IntBindMonQuanT m [OpenTerm]
+applySimpleUnquoting :: (Monad m) => OpenTerm -> IntBindMonQuanT m ([OpenTerm], Bool)
 applySimpleUnquoting trm = do {
   a <- lift $ freshVar;
   b <- lift $ freshVar;
-  ot <- return $ olist [con (UNQUOTE), a, b];
+  ot <- return $ olist [con UNQUOTE, a, b];
   unifySubsumes ot trm; --TODO: might need extraction...
   apla <- applyBindings a;
-  (newconstr, uq) <- (
-            tryBM $ do {
-               matchVPVar' apla;
-               u <- unquoteTermVP apla;
-               return ([], u);
-            }) <|> (tryBM $ do {
-                    (x,y) <- matchBinAppl apla;
-                     x' <- lift $ freshVar;
-                     y' <- lift $ freshVar;
-                     u <- return $ olist [x', y'] ;
-                     return ([olist [con UNQUOTE, x, x'],
-                              olist [con UNQUOTE, y, y']], u)})
-            <|> (do {
-              u <- unquoteTermVP apla;
-              return ([], u);
-            });
-  unify b uq >> return newconstr;
+  (tryBM $ do {
+     matchVPVar' apla;
+     u <- unquoteTermVP apla;
+     unify b u;
+     return ([],True);
+  }) <|> (tryBM $ do {
+          (x,y) <- matchBinAppl apla;
+           x' <- lift $ freshVar;
+           y' <- lift $ freshVar;
+           u <- return $ olist [x', y'] ;
+           unify b u;
+           return ([olist [con UNQUOTE, x, x'],
+                    olist [con UNQUOTE, y, y']], True);
+  }) <|> (do {
+    --if a is not instantiated, do not unquote!
+    case getConstant apla of
+      Just c -> unify b (con c) >> return ([],True)
+      Nothing -> return ([olist [con UNQUOTE, a, b]],False)
+  });
 }
 
 applySUQGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
@@ -108,7 +110,7 @@ applySUQGoals goals = do {
 applySUQGoalsStep' :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m ([(KB,OpenTerm)], Bool)
 applySUQGoalsStep' goals = do {
   newtrms <- concat <$> sequence [catchE
-    (tryBM ((map (\x -> (True, kb,x)) ) <$> applySimpleUnquoting g))
+    (tryBM $ (\(xs,hc) -> map (\x -> (hc, kb,x)) xs ) <$> applySimpleUnquoting g)
     (const $ return [(False,kb,g)]) | (kb,g) <- goals];
   return (map (\(x,y,z) -> (y,z)) newtrms,
           any (\(x,y,z) -> x) newtrms)

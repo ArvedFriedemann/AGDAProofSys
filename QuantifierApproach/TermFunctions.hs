@@ -12,6 +12,10 @@ import Control.Unification
 import Control.Unification.IntVar
 import Control.Monad.Trans.Except
 
+getConstant :: OpenTerm -> Maybe Constant
+getConstant (UTerm (CONST c)) = Just c
+getConstant _ = Nothing
+
 con :: Constant -> OpenTerm
 con = UTerm . CONST
 
