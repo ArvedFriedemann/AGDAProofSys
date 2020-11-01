@@ -53,25 +53,10 @@ testgoal6 = []
 
 --TODO: This is where the solving KB is explicitly needed!
 --also NOTE: I found out how goals can be encoded as implications and that the next state goals can just be added as normal goals, which just need to be lazily unquoted...that might be some huge convenience
---This should traverse in two meta steps
-testkb7 = ["forall (a b) (a -> (a v b))",
-           "forall (a b) (b -> (a v b))",
-           "cA",
-           "forall (a b a' b' a'' b'' c d e p1 p2) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
-                    --c as a placeholder for the solvingterm itself
-                    "((name forall b') -> ((name forall a') v (name forall b'))) -> c -> d -> e -> "++
-                    "((name p1 a'') v (name p2 b''))" ++
-           ") ((name p1 a'')) )",
-           "forall (a b a' b' a'' b'' c d p1 p2) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
-                    --c as a placeholder for the solvingterm itself
-                    "((name forall b') -> ((name forall a') v (name forall b'))) -> c -> d -> e -> "++
-                    "(name p1 a'')" ++
-           ") (cA) )"]
-testgoal7 = ["a v b"] --as we want actual assignments for a and b, they are not universal
 
 
 --this should traverse in just one meta step
-testkb8 = ["forall (a b) (a -> (a v b))",
+testkb7 = ["forall (a b) (a -> (a v b))",
            "forall (a b) (b -> (a v b))",
            "cA",
            "forall (a b a' b' a'' b'' c d p1 p2) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
@@ -79,6 +64,18 @@ testkb8 = ["forall (a b) (a -> (a v b))",
                     "((name forall b') -> ((name forall a') v (name forall b'))) -> c -> d -> "++
                     "((name p1 a'') v (name p2 b''))" ++
            ") (cA) )"]
+testgoal7 = ["a v b"]
+
+--this should traverse in just one meta step
+testkb8 = ["forall (a b) (a -> (a v b))",
+           "forall (a b) (b -> (a v b))",
+           "cA",
+           "x = x",
+           "forall (a b a' b' a'' b'' c d e p1 p2) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
+                    --c as a placeholder for the solvingterm itself
+                    "((name forall b') -> ((name forall a') v (name forall b'))) -> c -> d -> e -> "++
+                    "((name p1 a'') v (name p2 b''))" ++
+           ") ((name p1 a'') = cA) )"]
 testgoal8 = ["a v b"]
 
 

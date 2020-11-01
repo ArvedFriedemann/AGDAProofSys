@@ -77,23 +77,42 @@ applySimpleUnquoting trm = do {
   ot <- return $ olist [con (UNQUOTE), a, b];
   unifySubsumes ot trm; --TODO: might need extraction...
   apla <- applyBindings a;
-  newconstr <- (tryBM $ matchVPVar' apla >> return [])
-            <|> (tryBM $ do {
+  (newconstr, uq) <- (
+            tryBM $ do {
+               matchVPVar' apla;
+               u <- unquoteTermVP apla;
+               return ([], u);
+            }) <|> (tryBM $ do {
                     (x,y) <- matchBinAppl apla;
                      x' <- lift $ freshVar;
                      y' <- lift $ freshVar;
-                    return [olist [con UNQUOTE, x, x'],
-                            olist [con UNQUOTE, y, y']]})
-            <|> (return []);
-  uq <- applyBindings a >>= unquoteTermVP;
+                     u <- return $ olist [x', y'] ;
+                     return ([olist [con UNQUOTE, x, x'],
+                              olist [con UNQUOTE, y, y']], u)})
+            <|> (do {
+              u <- unquoteTermVP apla;
+              return ([], u);
+            });
   unify b uq >> return newconstr;
 }
 
---applies unquoting goals and only returns goals that didn't unquote.
 applySUQGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
-applySUQGoals goals = concat <$> sequence [catchE
-  (tryBM ((map (\x -> (kb,x)) ) <$> applySimpleUnquoting g))
-  (const $ return [(kb,g)]) | (kb,g) <- goals]
+applySUQGoals goals = do {
+  (goals', hasChanged) <- applySUQGoalsStep' goals;
+  if hasChanged
+    then applySUQGoals goals'
+    else return goals'
+}
+
+--applies unquoting goals and only returns goals that didn't unquote.
+applySUQGoalsStep' :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m ([(KB,OpenTerm)], Bool)
+applySUQGoalsStep' goals = do {
+  newtrms <- concat <$> sequence [catchE
+    (tryBM ((map (\x -> (True, kb,x)) ) <$> applySimpleUnquoting g))
+    (const $ return [(False,kb,g)]) | (kb,g) <- goals];
+  return (map (\(x,y,z) -> (y,z)) newtrms,
+          any (\(x,y,z) -> x) newtrms)
+}
 
 
 quoteClause :: Clause -> OpenTerm

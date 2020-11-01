@@ -45,7 +45,7 @@ interactiveProof' solvekb goals = return goals >>=
                           propagateProof >>=
                           propagateProof' solvekb >>=
                           instantiateGoals >>=
-                          applySUQGoals >>=
+                          --applySUQGoals >>=
                           interactiveProof'' solvekb
 
 instantiateGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
@@ -93,7 +93,7 @@ propagateProof' solvekb goals = do {
 
 propagateProof :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateProof goals = do {
-  possm <- applySUQGoals goals >>= proofPossibilities ;
+  possm <- {-applySUQGoals goals >>=-} proofPossibilities goals ;
   midx <- return $ possMapIndexOfFirstSingleton possm;
   case midx of
     Just idx -> applyProofAction possm idx >>= instantiateGoals >>= propagateProof
@@ -111,7 +111,7 @@ propagateProofMETA solvekb goals  = do {
   solvetrm <- return $ olist [con SOLVE, qg, solveOutState];
   unquotgoal <- lift $ freshVar;
   unquotetrm <- return $ olist [con UNQUOTE, solveOutState, unquotgoal];
-  newgoals <- propagateProof ((solvekb, unquotgoal):(solvekb, unquotetrm):(solvekb, solvetrm):[]); -- goals);
+  newgoals <- propagateProof ((solvekb, unquotgoal):(solvekb, unquotetrm):(solvekb, solvetrm): []); -- goals);
   --we'll do the infinite recursive call later...
   --if anythingChanged
   --  then propagateProofMETA newgoals
