@@ -111,7 +111,7 @@ propagateProofMETA solvekb goals  = do {
   solvetrm <- return $ olist [con SOLVE, qg, solveOutState];
   unquotgoal <- lift $ freshVar;
   unquotetrm <- return $ olist [con UNQUOTE, solveOutState, unquotgoal];
-  newgoals <- propagateProof ((solvekb, unquotgoal):(solvekb, unquotetrm):(solvekb, solvetrm): []); -- goals);
+  newgoals <- return $ {-propagateProof-} ((solvekb, unquotgoal):(solvekb, unquotetrm):(solvekb, solvetrm): []); -- goals);
   --we'll do the infinite recursive call later...
   --if anythingChanged
   --  then propagateProofMETA newgoals
