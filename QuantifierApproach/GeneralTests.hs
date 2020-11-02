@@ -20,7 +20,8 @@ bounds = ["=","->","^","v","bot",":","[]",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "1","2","3","4","5","6","7","8","9"]
 
-stdTest = stdTest' bounds
+stdTest = stdTest' False bounds
+stdTestUniv = stdTest' True bounds
 
 testkb1 = ["forall (a b) (a -> (a v b))",
            "forall (a b) (b -> (a v b))",
@@ -83,14 +84,17 @@ testgoal8 = ["a v b"]
 
 --TODO: fix inline unquoting maybe?
 
-testkb7 = [
+--use stdTestUniv for this one
+testkb9 = [ "T",
+            "x = x",
             "append [] x x",
             "(append xs y zs) -> append (xs : x) y (zs : x)",
 
             "[] contains all T",
-            "((x = (a ^ b)) -> bot) -> (([] : x) contains all x)",
+            --this is what you get when everything is left assotiative -.-
+            "T -> ((x = (a ^ b)) -> bot) -> (([] : x) contains all x)",
             "(as contains all a) -> (bs contains all b) -> (append as bs z) -> (z contains all (a ^ b))"]
-testgoal7 = ["z contains all (cA ^ (cB ^ cC))"]
+testgoal9 = ["z contains all (cA ^ (cB ^ cC))"]
 
 
 

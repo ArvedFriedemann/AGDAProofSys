@@ -23,19 +23,35 @@ stdVarProp lst v = if Set.member v (Set.fromList lst)
                    then UNIVERSAL
                    else NEUTRAL
 
+exclVarProp :: (Ord a) => [a] -> a -> VarProp
+exclVarProp lst v = if Set.member v (Set.fromList lst)
+                    then UNIVERSAL
+                    else EXISTENTIAL
+
 
 stdcrt :: (Monad m) => [String] -> [String] -> String -> IntBindMonQuanT m OpenTerm
-stdcrt bounds universals = (createOpenTerm $ stdVarProp universals).(stdrd bounds)
+stdcrt bounds universals = stdcrt' bounds (stdVarProp universals)
+
+stdcrt' :: (Monad m) => [String] -> (String -> VarProp) -> String -> IntBindMonQuanT m OpenTerm
+stdcrt' bounds vpfkt = (createOpenTerm $ vpfkt).(stdrd bounds)
 
 stdcrtAll :: (Monad m) => [String] -> [String] ->  [String] -> IntBindMonQuanT m [OpenTerm]
-stdcrtAll bounds universals trms = createOpenTerms (stdVarProp universals) ((stdrd bounds) <$> trms)
+stdcrtAll bounds universals = stdcrtAll' bounds (stdVarProp universals)
+
+stdcrtAll' :: (Monad m) => [String] -> (String -> VarProp) ->  [String] -> IntBindMonQuanT m [OpenTerm]
+stdcrtAll' bounds vpfkt trms = createOpenTerms vpfkt ((stdrd bounds) <$> trms)
 
 stdkb :: (Monad m) => [String] -> StringRawKB -> IntBindMonQuanT m RawKB
 stdkb bounds stringkb = sequence $ [stdcrt bounds [] cls | cls <- stringkb]
 
-stdTest' :: [String] -> StringRawKB -> [String] -> IO (Either MError ())
-stdTest' bounds strkb goals = runIntBindQuanT $ do {
+stdkbuniv :: (Monad m) => [String] -> StringRawKB -> IntBindMonQuanT m RawKB
+stdkbuniv bounds stringkb = sequence $ [stdcrt' bounds (const UNIVERSAL) cls | cls <- stringkb]
+
+stdTest' :: Bool -> [String] -> StringRawKB -> [String] -> IO (Either MError ())
+stdTest' kbuniv bounds strkb goals = runIntBindQuanT $ do {
   goals <- stdcrtAll bounds [] goals;
-  kb <- stdkb bounds strkb;
+  kb <- (if kbuniv
+          then stdkbuniv bounds strkb
+          else stdkb bounds strkb);
   interactiveProof kb [(kb, g) | g <- goals]
 }
