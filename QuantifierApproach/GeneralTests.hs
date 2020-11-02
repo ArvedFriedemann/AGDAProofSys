@@ -16,7 +16,7 @@ bounds = ["=","->","^","v","bot",":","[]",
           "Test", "Test2", "Test3",
           "cA", "cB", "cC", "cD",
           "append", "length", "zero", "suc", "list", "consteq",
-          "in","contains","all",
+          "in","contains","all","con",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "1","2","3","4","5","6","7","8","9"]
 
@@ -84,11 +84,26 @@ testgoal8 = ["a v b"]
 
 --TODO: fix inline unquoting maybe?
 
+eqkb = ["T",
+        "x = x",
+        "(a = c) -> (b = d) -> (a b) = (c d)",
+        "(con x) -> (x = (a b)) -> ()",
+        "(con x) -> ((a b) = x) -> ()",
+        "con cA",
+        "con cB",
+        "con cC",
+        "(cA = cB) -> ()",
+        "(cA = cC) -> ()",
+        "(cB = cA) -> ()",
+        "(cB = cC) -> ()",
+        "(cC = cB) -> ()",
+        "(cC = cA) -> ()"]
+eqtestgoal1 = ["(cA = (a b)) -> ()"]
+
 --use stdTestUniv for this one
-testkb9 = [ "T",
-            "x = x",
+testkb9 = eqkb ++ [
             "append [] x x",
-            "(append xs y zs) -> append (xs : x) y (zs : x)",
+            "(append xs y zs) -> (append (xs : x) y (zs : x))",
 
             "[] contains all T",
             --this is what you get when everything is left assotiative -.-

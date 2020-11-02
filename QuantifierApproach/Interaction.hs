@@ -58,9 +58,13 @@ interactiveProof'' _ []  = return ()
 interactiveProof'' solvekb goals = do {
   possm <- proofPossibilities goals;
   printProofPossMap (possMapToIndices possm);
+
+  lift3 $ putStrLn $ "Please enter step index:";
+
   possmlen <- return $ possMapLength possm;
 
   idx <- lift3 $ readLn;
+  lift3 $ putStrLn "" >> putStrLn "" >> putStrLn "">> putStrLn "";
   if (0 <= idx) && (idx < possmlen)
   then applyProofAction possm idx >>= interactiveProof' solvekb
   else (lift3 $ putStrLn "invalid Index...") >> interactiveProof' solvekb goals
