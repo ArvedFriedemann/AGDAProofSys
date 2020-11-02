@@ -16,6 +16,7 @@ bounds = ["=","->","^","v","bot",":","[]",
           "Test", "Test2", "Test3",
           "cA", "cB", "cC", "cD",
           "append", "length", "zero", "suc", "list", "consteq",
+          "in","contains","all",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "1","2","3","4","5","6","7","8","9"]
 
@@ -81,18 +82,16 @@ testgoal8 = ["a v b"]
 
 
 --TODO: fix inline unquoting maybe?
-{-
-testkb7 = [ "cA -> (cA v cB)",
-            "cB -> (cA v cB)",
-            "cA",
-            "cB -> bot",
 
-            "((x = (a ^ b)) -> bot) -> x in x",
-            "((a in x) v (a in y)) -> (a in (x ^ y))",
-            --TODO: sets super hard to express
-            "(solve kb kb')"] --TODO!!!!
-testgoal7 = ["a v b"] --as we want actual assignments for a and b, they are not universal
--}
+testkb7 = [
+            "append [] x x",
+            "(append xs y zs) -> append (xs : x) y (zs : x)",
+
+            "[] contains all T",
+            "((x = (a ^ b)) -> bot) -> (([] : x) contains all x)",
+            "(as contains all a) -> (bs contains all b) -> (append as bs z) -> (z contains all (a ^ b))"]
+testgoal7 = ["z contains all (cA ^ (cB ^ cC))"]
+
 
 
 freshentest1 = runIntBindQuanT $ do {
