@@ -41,10 +41,8 @@ interactiveProofPreread solvekb goals = do {
 
 interactiveProof' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof' solvekb goals = return goals >>=
-                          instantiateGoals >>=
                           propagateProof >>=
-                          propagateProof' solvekb >>=
-                          instantiateGoals >>=
+                          --propagateProof' solvekb >>=
                           interactiveProof'' solvekb
 
 instantiateGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
@@ -80,18 +78,22 @@ applyProofAction possm idx = do {
 
 proofPossibilities :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m (GoalToPossMap m)
 proofPossibilities kbgoals = sequence [do {
-  bwp <- backwardPossibilitiesMatchClause kb g;
+  bwp <- backwardPossibilities kb g; --backwardPossibilitiesMatchClause
   return ((kb,g), bwp)
 } | (kb,g) <- kbgoals]
 
 propagateProof' :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateProof' _ [] = return []
-propagateProof' solvekb goals = do {
-  propagateProofMETA solvekb goals;
-}
+propagateProof' solvekb goals = propagateProofMETA solvekb goals;
+
+preparationSequence :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+preparationSequence goals = instantiateGoals goals >>=
+                            applySUQGoals >>=
+                            applyImplicationGoals
 
 propagateProof :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
-propagateProof goals = applySUQGoals goals >>= propagateProofAfterInit
+propagateProof goals =  preparationSequence goals >>=
+                        propagateProofAfterInit
 
 propagateProofAfterInit :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateProofAfterInit goals = do {
@@ -99,10 +101,8 @@ propagateProofAfterInit goals = do {
   midx <- return $ possMapIndexOfFirstSingleton possm;
   case midx of
     Just idx -> applyProofAction possm idx >>=
-                instantiateGoals >>=
-                applySUQGoals >>=
-                propagateProofAfterInit
-    Nothing -> return goals
+                propagateProof
+    Nothing -> preparationSequence goals
 }
 
 

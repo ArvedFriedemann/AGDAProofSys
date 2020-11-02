@@ -65,3 +65,20 @@ instantiateUniversality trm = catchE (lookout $ do {
 
 readRawKB :: (Monad m) => RawKB -> IntBindMonQuanT m KB
 readRawKB trms = sequence [ instantiateUniversality t >>= matchClauseStructure | t <- trms]
+
+
+applyImplicationGoals :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+applyImplicationGoals goals = do {
+  goals' <- sequence $ applyImplicationGoal' <$> goals;
+  hasChanged <- return $ (\(x,y,z) -> x) <$> goals';
+  newgoals <- return $ (\(x,y,z) -> (y,z)) <$> goals';
+  if any id hasChanged
+    then applyImplicationGoals newgoals
+    else return newgoals
+}
+
+applyImplicationGoal' :: (Monad m) => (KB, OpenTerm) -> IntBindMonQuanT m (Bool, KB, OpenTerm)
+applyImplicationGoal' (kb, clause) = do {
+  (pre, post) <- matchClauseStructure clause;
+  return (not $ null pre ,(return <$> pre)++kb, post)
+}
