@@ -16,9 +16,11 @@ bounds = ["=","->","^","v","bot",":","[]",
           "Test", "Test2", "Test3",
           "cA", "cB", "cC", "cD",
           "append", "length", "zero", "suc", "list", "consteq",
-          "in","contains","all","con",
+          "in","contains","all","con","/","with","to","is",
+          "eval","exchange","val","suc",
+          "if","then","else","and","or",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
-          "1","2","3","4","5","6","7","8","9"]
+          "0","1","2","3","4","5","6","7","8","9"]
 
 stdTest = stdTest' False bounds
 stdTestUniv = stdTest' True bounds
@@ -110,6 +112,38 @@ testkb9 = eqkb ++ [
             "T -> ((x = (a ^ b)) -> bot) -> (([] : x) contains all x)",
             "(as contains all a) -> (bs contains all b) -> (append as bs z) -> (z contains all (a ^ b))"]
 testgoal9 = ["z contains all (cA ^ (cB ^ cC))"]
+
+testkb10 = [--TODO: damnit...this needs ITE again -.-
+            "(evalStep L L') -> (eval L' R) -> (eval L R)",
+            "(eval L L)",
+            --TODO: damnit...ITE and whatnot again needed...
+            "... -> (evalStep (E1 E2) E')",
+            "(exchange 0 in E with y to E') -> (evalStep ((/ E) y) E')",
+
+            "(exchange (suc n) in E with y to E') -> "++
+              "(exchange n in (/ E) with y to (/ E'))",
+            "(exchange n in E1 with y to E1') -> "++
+            "(exchange n in E2 with y to E2') -> "++
+              "(exchange n in (E1 E2) with y to (E1' E2'))",
+            "(exchange x in (val x) with y to y)"]
+testgoal10 = []
+
+
+prettykb0 = [ "subject (the car)",
+              "predicate carries",
+              "object (the person)",
+              "(subject X) -> (predicate Y) -> (object Z) -> (sentence (X Y Z))"]
+prettygoal0 = ["sentence X"]
+
+--TODO: An object cannot only be deduced by a top level rule, but also by (a) fact(s) that entail a rule that might not have been there before...ouch, that sounds painful
+prettykb1 = [ "T",
+              "T -> (A -> B) -> (if A then B)",
+              "A -> B -> (A and B)",
+              "(the car) is subject",
+              "carries is predicate",
+              "(the person) is object",
+              "if ((X is subject) and (Y is predicate) and (Z is object)) then (sentence (X Y Z))"]
+prettygoal1 = ["sentence X"]
 
 
 
