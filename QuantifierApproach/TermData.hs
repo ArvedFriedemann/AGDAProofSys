@@ -18,7 +18,7 @@ import Data.Map.Lazy as Map
 import Safe
 
 
-data Constant = TOP | BOT | NEQ | EQT | IMPL | CONJ | DISJ | EXISTS | FORALL | CON String deriving (Show, Eq)
+data Constant = TOP | BOT | NEQ | EQT | IMPL | CONJ | DISJ | SOLVE | VP VarProp | NAME | QUOTE | UNQUOTE | CON String | ID IntVar deriving (Show, Eq)
 data Term a = CONST Constant
             | APPL a a
   deriving (Show, Eq, Functor, Foldable, Traversable)
@@ -36,6 +36,12 @@ data CustomError t v =  OccursFailure v (UTerm t v)
                       | MismatchFailure (t (UTerm t v)) (t (UTerm t v))
                       | UniversalBoundError v
                       | CustomError String
+
+instance Monoid (CustomError t v) where
+  mempty = CustomError ""
+
+instance Semigroup (CustomError t v) where
+  err1 <> err2 = err2
 
 data VarProp = UNIVERSAL | EXISTENTIAL | NEUTRAL deriving (Show, Eq, Ord)
 

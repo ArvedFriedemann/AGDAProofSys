@@ -13,13 +13,37 @@ import Debug.Trace
 matchClauseStructure :: (Monad m) => OpenTerm -> IntBindMonQuanT m Clause
 matchClauseStructure trm = listToClause <$> (matchBinConstLAssocList IMPL trm)
 
+matchConjunctionStructure :: (Monad m) => OpenTerm -> IntBindMonQuanT m [OpenTerm]
+matchConjunctionStructure = matchBinConstLAssocList CONJ
+
+matchDisjunctionStructure :: (Monad m) => OpenTerm -> IntBindMonQuanT m [OpenTerm]
+matchDisjunctionStructure = matchBinConstLAssocList DISJ
+
+matchKBStructure :: (Monad m) => OpenTerm -> IntBindMonQuanT m KB
+matchKBStructure trm = do {
+  conjs <- matchConjunctionStructure trm;
+  sequence $ matchClauseStructure <$> conjs
+}
+
+clauseToGoal :: (Monad m) => Clause -> IntBindMonQuanT m (KB, OpenTerm)
+clauseToGoal (facts, goal) = do {
+  clauses <- sequence $ matchClauseStructure <$> facts;
+  return (clauses, goal)
+}
+
+kbToGoals :: (Monad m) => KB -> IntBindMonQuanT m [(KB, OpenTerm)]
+kbToGoals kb = sequence $ clauseToGoal <$> kb
+
+matchGoalStructure :: (Monad m) => OpenTerm -> IntBindMonQuanT m [(KB, OpenTerm)]
+matchGoalStructure trm = matchKBStructure trm >>= kbToGoals
+
 --gets the content term and the bound (hopefully-)variables.
 --does not apply the bindings!
 matchUniversalBinding :: (Monad m) => OpenTerm -> IntBindMonQuanT m ([OpenTerm],OpenTerm)
 matchUniversalBinding trm = do {
   a <- lift $ freshVar;
   b <- lift $ freshVar;
-  ot <- return $ olist [con FORALL, a, b];
+  ot <- return $ olist [con (VP UNIVERSAL), a, b];
   unifySubsumes ot trm;
   hopefullyVars <- applyBindings a >>= matchBinApplLAssocList;
   b' <- applyBindings b; -- TODO
@@ -41,3 +65,20 @@ instantiateUniversality trm = catchE (lookout $ do {
 
 readRawKB :: (Monad m) => RawKB -> IntBindMonQuanT m KB
 readRawKB trms = sequence [ instantiateUniversality t >>= matchClauseStructure | t <- trms]
+
+
+applyImplicationGoals :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+applyImplicationGoals goals = do {
+  goals' <- sequence $ applyImplicationGoal' <$> goals;
+  hasChanged <- return $ (\(x,y,z) -> x) <$> goals';
+  newgoals <- return $ (\(x,y,z) -> (y,z)) <$> goals';
+  if any id hasChanged
+    then applyImplicationGoals newgoals
+    else return newgoals
+}
+
+applyImplicationGoal' :: (Monad m) => (KB, OpenTerm) -> IntBindMonQuanT m (Bool, KB, OpenTerm)
+applyImplicationGoal' (kb, clause) = do {
+  (pre, post) <- matchClauseStructure clause;
+  return (not $ null pre ,(return <$> pre)++kb, post)
+}

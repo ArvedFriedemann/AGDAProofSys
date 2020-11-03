@@ -6,9 +6,12 @@ import InferenceRules
 import SpecialMatches
 import Util
 import Printing
+import Quoting
 
 import Control.Unification
 import Control.Monad
+import Control.Monad.Trans.Except
+import Control.Monad.Trans
 import Debug.Trace
 import Data.List
 
@@ -19,26 +22,28 @@ type PossMap a b = [(a,[b])]
 type GoalToPossMap m = PossMap (KB,OpenTerm) (Clause, IntBindMonQuanT m Clause)
 type IdxGoalToPossMap m = PossMap (KB,OpenTerm) (Int, (Clause, IntBindMonQuanT m Clause))
 
-interactiveProof :: [(RawKB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProof goals = (sequence $ [readRawKB kb >>= \kb' -> return (kb', gs) |(kb,gs) <- goals]) >>=
-                          interactiveProofPreread
+interactiveProof :: RawKB -> [(RawKB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProof solvekb goals = do {
+  goals' <- sequence $ [readRawKB kb >>= \kb' -> return (kb', gs) |(kb,gs) <- goals];
+  solvekb' <- readRawKB solvekb;
+  interactiveProofPreread solvekb' goals'
+}
 
 --TODO: also make interactveProofStep
-interactiveProofPreread :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProofPreread goals = do {
-  interactiveProof' goals;
+interactiveProofPreread :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProofPreread solvekb goals = do {
+  interactiveProof' solvekb goals;
   lift3 $ putStrLn "Original goals:";
   aplGoals <- applyBindingsAll (snd <$> goals);
   sequence $ (lift3.putStrLn.oTToString) <$> aplGoals;
   return ()
 }
 
-interactiveProof' :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProof' goals = return goals >>=
-                          instantiateGoals >>=
+interactiveProof' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProof' solvekb goals = return goals >>=
                           propagateProof >>=
-                          instantiateGoals >>=
-                          interactiveProof''
+                          --propagateProof' solvekb >>=
+                          interactiveProof'' solvekb
 
 instantiateGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
 instantiateGoals goals = sequence [do {
@@ -48,18 +53,21 @@ instantiateGoals goals = sequence [do {
   return (kb, g')
 } | (kb, gs) <- goals]
 
-interactiveProof'' :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
-interactiveProof'' [] = return ()
-interactiveProof'' goals = do {
+interactiveProof'' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
+interactiveProof'' _ []  = return ()
+interactiveProof'' solvekb goals = do {
   possm <- proofPossibilities goals;
   printProofPossMap (possMapToIndices possm);
+
+  lift3 $ putStrLn $ "Please enter step index:";
 
   possmlen <- return $ possMapLength possm;
 
   idx <- lift3 $ readLn;
+  lift3 $ putStrLn "" >> putStrLn "" >> putStrLn "">> putStrLn "";
   if (0 <= idx) && (idx < possmlen)
-  then applyProofAction possm idx >>= interactiveProof'
-  else (lift3 $ putStrLn "invalid Index...") >> interactiveProof' goals
+  then applyProofAction possm idx >>= interactiveProof' solvekb
+  else (lift3 $ putStrLn "invalid Index...") >> interactiveProof' solvekb goals
 }
 
 applyProofAction :: (Monad m) => GoalToPossMap m -> Int -> IntBindMonQuanT m [(KB,OpenTerm)]
@@ -74,17 +82,50 @@ applyProofAction possm idx = do {
 
 proofPossibilities :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m (GoalToPossMap m)
 proofPossibilities kbgoals = sequence [do {
-  bwp <- backwardPossibilitiesMatchClause kb g;
+  bwp <- backwardPossibilities kb g; --backwardPossibilitiesMatchClause
   return ((kb,g), bwp)
 } | (kb,g) <- kbgoals]
 
+propagateProof' :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+propagateProof' _ [] = return []
+propagateProof' solvekb goals = propagateProofMETA solvekb goals;
+
+preparationSequence :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+preparationSequence goals = instantiateGoals goals >>=
+                            applySUQGoals >>=
+                            applyImplicationGoals
+
 propagateProof :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
-propagateProof goals = do {
+propagateProof goals =  preparationSequence goals >>=
+                        propagateProofAfterInit
+
+propagateProofAfterInit :: (Monad m) => [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+propagateProofAfterInit goals = do {
   possm <- proofPossibilities goals;
   midx <- return $ possMapIndexOfFirstSingleton possm;
   case midx of
-    Just idx -> applyProofAction possm idx >>= instantiateGoals >>= propagateProof
-    Nothing -> return goals
+    Just idx -> applyProofAction possm idx >>=
+                propagateProof
+    Nothing -> preparationSequence goals
+}
+
+
+--returns the propagated step with the META goal, together with the position of the META deduced next state.
+--TODO: problem: there is no universal solving KB
+--TODO: assignments of the solve predicate need to be applied to the real state
+propagateProofMETA :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+propagateProofMETA solvekb goals  = do {
+  qg <- applyBindings (goalsToTerm goals) >>= quoteTermVP;
+  solveOutState <- lift $ freshVar;
+  solvetrm <- return $ olist [con SOLVE, qg, solveOutState];
+  unquotgoal <- lift $ freshVar;
+  unquotetrm <- return $ olist [con UNQUOTE, solveOutState, unquotgoal];
+  newgoals <- propagateProof ((solvekb, unquotgoal):(solvekb, unquotetrm):(solvekb, solvetrm): []); -- goals);
+  --we'll do the infinite recursive call later...
+  --if anythingChanged
+  --  then propagateProofMETA newgoals
+  --  else return (newgoals, solveOutState)
+  return newgoals
 }
 
 printProofPossMap :: (IdxGoalToPossMap IO) -> IntBindMonQuanT IO ()
@@ -92,6 +133,7 @@ printProofPossMap mp = void $ sequence [ do {
   aplgoal <- applyBindings goal;
   aplkb <- applyKB kb;
   kbToFormatStringVP aplkb >>= (lift3.putStrLn);
+  lift3 $ putStrLn "       ------";
   gstring <- oTToStringVP aplgoal;
   lift3 $ putStrLn $ "goal ("++gstring++")       -- ("++ (show $ length poss) ++ " possibilitie(s))";
   sequence [do {
@@ -99,6 +141,7 @@ printProofPossMap mp = void $ sequence [ do {
             clsstring <- clauseToStringVP cls';
             lift3 $ putStrLn $ "("++(show idx)++") "++ clsstring
             }| (idx, (cls, _)) <- poss];
+  lift3 $ putStrLn "---------->>>>>>>>>>";
 } | ((kb, goal), poss) <- mp]
 
 

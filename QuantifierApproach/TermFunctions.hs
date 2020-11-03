@@ -12,6 +12,10 @@ import Control.Unification
 import Control.Unification.IntVar
 import Control.Monad.Trans.Except
 
+getConstant :: OpenTerm -> Maybe Constant
+getConstant (UTerm (CONST c)) = Just c
+getConstant _ = Nothing
+
 con :: Constant -> OpenTerm
 con = UTerm . CONST
 
@@ -132,7 +136,8 @@ matchBinConstLAssocList :: (Monad m) => Constant -> OpenTerm -> IntBindMonQuanT 
 matchBinConstLAssocList cst term = catchE (do {
   (a,b) <- matchBinConst cst term;
   lst <- applyBindings a >>= matchBinConstLAssocList cst; --TODO: applying should not be necessary!
-  return $ lst ++ [b];
+  b' <- applyBindings b;
+  return $ lst ++ [b'];
 }) (const $ return [term])
 
 matchBinAppl :: (Monad m) => OpenTerm -> IntBindMonQuanT m (OpenTerm,OpenTerm)
@@ -148,7 +153,8 @@ matchBinApplLAssocList :: (Monad m) => OpenTerm -> IntBindMonQuanT m [OpenTerm]
 matchBinApplLAssocList term = catchE (do {
   (a,b) <- matchBinAppl term;
   lst <- applyBindings a >>= matchBinApplLAssocList; --TODO: applying should not be necessary!
-  return $ lst ++ [b];
+  b' <- applyBindings b;
+  return $ lst ++ [b'];
 }) (const $ return [term])
 
 ----------------------------------------------
@@ -166,6 +172,15 @@ clauseFromList lst = (init lst, last lst)
 
 clauseToTerm :: Clause -> OpenTerm
 clauseToTerm cls = oplist (con IMPL) (clauseToList cls)
+
+kbToTerm :: KB -> OpenTerm
+kbToTerm kb = oplist (con CONJ) (clauseToTerm <$> kb)
+
+goalsToKB :: [(KB, OpenTerm)] -> KB
+goalsToKB goals = (\(kb, goal) -> clauseFromList $ (clauseToTerm <$> kb) ++ [goal]) <$> goals
+
+goalsToTerm :: [(KB, OpenTerm)] -> OpenTerm
+goalsToTerm = kbToTerm.goalsToKB
 
 modifyAsList :: (Monad m) => ([OpenTerm] -> m [OpenTerm]) -> Clause -> m Clause
 modifyAsList fkt cls = clauseFromList <$> fkt (clauseToList cls)
