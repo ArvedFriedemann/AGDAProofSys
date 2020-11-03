@@ -18,7 +18,7 @@ bounds = ["=","->","^","v","bot",":","[]",
           "append", "length", "zero", "suc", "list", "consteq",
           "in","contains","all","con","/","with","to","is",
           "eval","exchange","val","suc",
-          "if","then","else","and","or",
+          "if","then","else","and","or","first","holds",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "0","1","2","3","4","5","6","7","8","9"]
 
@@ -127,6 +127,26 @@ testkb10 = [--TODO: damnit...this needs ITE again -.-
               "(exchange n in (E1 E2) with y to (E1' E2'))",
             "(exchange x in (val x) with y to y)"]
 testgoal10 = []
+
+
+--this could be the solution to the determinism problem. The terms themselves need to carry enough information in the head for the system to run deterministically. If they use the same variables as their counterparts, they even directly apply the original binding.
+testkb11 = ["A -> (if 1 then A else B)",
+            "B -> (if 0 then A else B)",
+            "cA",
+            "cB",
+            "x = x"]
+testgoal11 = ["if X then cA else cB", "X = 1"]
+
+--this is not really expressible, as there is no information on the failure of a proof...
+testkb12 = [
+            "A -> P -> (if P then A else B)",
+            "B -> (P -> ()) -> (if P then A else B)",
+            "cA",
+            "cB",
+            "x = x"]
+testgoal12 = ["first A then B X", "A -> "]
+
+
 
 
 prettykb0 = [ "subject (the car)",
