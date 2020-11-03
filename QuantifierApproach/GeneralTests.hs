@@ -163,6 +163,16 @@ testkb12 = [
 testgoal12 = []
 --this is the functional interpretation. Problem is: functions inheritantly evaluate in a nondeterministic way. Same would work with a deterministic machine.
 
+--This is a test using a deterministic machine model
+--Idea is to have a deterministic register machine to do computation. inputs and outputs are placed at specific locations in the memory.
+testkb13 = [
+  "x = x",
+  "(x' is x in mem) -> (x' is y in mem') -> (forall z ((z = y) -> ()) -> (k is z in mem) <-> (k is z in mem')) -> (step (copy x y) mem mem')"
+            ]
+testgoal13 = []
+
+
+
 
 prettykb0 = [ "subject (the car)",
               "predicate carries",
