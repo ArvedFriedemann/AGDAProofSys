@@ -12,12 +12,12 @@ import Quoting
 import Control.Unification
 import Control.Monad.Trans
 
-bounds = ["=","->","^","v","bot",":","[]",
+bounds = ["=","->","^","v","bot",":","::","[]",
           "Test", "Test2", "Test3",
           "cA", "cB", "cC", "cD",
           "append", "length", "zero", "suc", "list", "consteq",
           "in","contains","all","con","/","with","to","is",
-          "eval","exchange","val","suc",
+          "eval","exchange","val","suc","left","right",
           "if","then","else","and","or","first","holds",
           "subject", "predicate","object", "the", "car", "person", "carries", "sentence","moth", "question", "alldiff", "permut", "member_rem", "sudoku",
           "0","1","2","3","4","5","6","7","8","9"]
@@ -145,8 +145,23 @@ testkb12 = [
             "cB",
             "x = x"]
 testgoal12 = ["first A then B X", "A -> "]
+--In general, determinism of a statement only comes when for a goal, all matching terms have an id that makes it unique which term was being used. Furthermore, the premises need to be ided as well. A proof is a KB with such IDs where each ided rule matches with the original axioms.
 
+--A test for the usage of proof theory
+testkb12 = [
+  "x = x",
+  "(a : A) -> (a = b) -> (b : A)",
+  "(f : ((a : A) -> (b : B)) -> (a : A) -> ((f a) : B) ^ ((f a) = b)",
 
+  "left : ((a : A) -> ((left a) : (A v B)))",
+  "right : ((b : B) -> ((right b) : (A v B))",
+
+  "((a : A) -> (c1 : C) -> ((fkt (left a) = c1))) -> "++
+  "((b : B) -> (c2 : C) -> ((fkt (right b) = c2))) -> "++
+  "(fkt : (ab : (A v B)) -> (c : C))"
+            ]
+testgoal12 = []
+--this is the functional interpretation. Problem is: functions inheritantly evaluate in a nondeterministic way. Same would work with a deterministic machine.
 
 
 prettykb0 = [ "subject (the car)",
