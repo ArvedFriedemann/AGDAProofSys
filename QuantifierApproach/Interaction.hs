@@ -128,6 +128,7 @@ propagateProofMETA solvekb goals  = do {
   return newgoals
 }
 
+
 printProofPossMap :: (IdxGoalToPossMap IO) -> IntBindMonQuanT IO ()
 printProofPossMap mp = void $ sequence [ do {
   aplgoal <- applyBindings goal;

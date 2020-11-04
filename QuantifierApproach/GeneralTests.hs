@@ -148,7 +148,7 @@ testgoal12 = ["first A then B X", "A -> "]
 --In general, determinism of a statement only comes when for a goal, all matching terms have an id that makes it unique which term was being used. Furthermore, the premises need to be ided as well. A proof is a KB with such IDs where each ided rule matches with the original axioms.
 
 --A test for the usage of proof theory
-testkb12 = [
+testkb13 = [
   "x = x",
   "(a : A) -> (a = b) -> (b : A)",
   "(f : ((a : A) -> (b : B)) -> (a : A) -> ((f a) : B) ^ ((f a) = b)",
@@ -160,16 +160,16 @@ testkb12 = [
   "((b : B) -> (c2 : C) -> ((fkt (right b) = c2))) -> "++
   "(fkt : (ab : (A v B)) -> (c : C))"
             ]
-testgoal12 = []
+testgoal13 = []
 --this is the functional interpretation. Problem is: functions inheritantly evaluate in a nondeterministic way. Same would work with a deterministic machine.
 
 --This is a test using a deterministic machine model
 --Idea is to have a deterministic register machine to do computation. inputs and outputs are placed at specific locations in the memory.
-testkb13 = [
+testkb14 = [
   "x = x",
   "(x' is x in mem) -> (x' is y in mem') -> (forall z ((z = y) -> ()) -> (k is z in mem) <-> (k is z in mem')) -> (step (copy x y) mem mem')"
             ]
-testgoal13 = []
+testgoal14 = []
 
 
 
