@@ -42,7 +42,7 @@ interactiveProofPreread solvekb goals = do {
 interactiveProof' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof' solvekb goals = return goals >>=
                           propagateProof >>=
-                          --propagateProof' solvekb >>=
+                          propagateProof' solvekb >>=
                           interactiveProof'' solvekb
 
 instantiateGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
@@ -80,11 +80,15 @@ applyProofAction possm idx = do {
   return (newGoalsKB ++ oldGoalsKB)
 }
 
+splitProof :: (Monad m) => (GoalToPossMap m) -> [IntBindMonQuanT m [(KB,OpenTerm)]]
+splitProof possm = undefined --TODO
+
 proofPossibilities :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m (GoalToPossMap m)
 proofPossibilities kbgoals = sequence [do {
   bwp <- backwardPossibilities kb g; --backwardPossibilitiesMatchClause
   return ((kb,g), bwp)
 } | (kb,g) <- kbgoals]
+
 
 propagateProof' :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateProof' _ [] = return []

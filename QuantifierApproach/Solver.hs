@@ -16,56 +16,13 @@ bounds = ["=","->","^","v","bot",":","[]"]
 stdTest = stdTest' bounds
 
 testkb = [
-  --natural deduction
-  "forall (a b) (a -> (a v b))",
-  "forall (a b) (b -> (a v b))",
-  "forall (a b c) ((a v b) -> (a -> c) -> (b -> c) -> c)",
-
-  "forall (a b) (a -> b -> (a ^ b))",
-  "forall (a b) ((a ^ b) -> a)",
-  "forall (a b) ((a ^ b) -> b)",
-
-  "forall a (bot -> a)",
-  --equality and substitution
-  "forall x (x = x)",
-  "forall (A B C) ( (B = C) -> ((A B) = (A C)) )",
-  "forall (A B C) ( (B = C) -> ((B A) = (C A)) )",
-  --equivalence
-  "forall (A B) ((A -> B) -> (B -> A) -> (A <-> B))",
-  --ite
-  "forall (A B C) ( (A -> B) -> (ite A then B else C) )",
-  "forall (A B C) ( ((A -> bot) -> C) -> (ite A then B else C) )",
-  --typing rules
-  "forall (f a A B) ( (f : (A -> B)) -> (a : A) -> ((f a) : B) )",
-  "forall (x A) ( (x : A) -> A )",
-  --my take on an existential quantifier...
-  "forall (x A) ( A -> (exists x A) )",
-  "forall (x A) ( (exists x A) -> (x : A) )",
-
-  "forall f ((deterministic f) <-> (forall (a b) ((a = b) -> (f a) = (f b) ) )) ",
-
-  --TODO: function evaluation
-  "(executeStep f with [] into x) -> bot",
-  "ite ( lst = (xs : (f = a)) )" ++
-  "then (executeStep f with lst into a)" ++
-  "else (executeStep f with xs into x)",
-  "(executeStep f with lst into x) -> (executeRec f with lst in implctx into x)",
-  "(executeStep f with lst into a) -> "++
-  "   (lst' implements a in implctx) -> "++
-  "   (executeRec a with lst' in implctx into x) -> "++
-  "   (executeRec f with lst  in implctx into x)",
-
-  "solve : Solver", --explicitly no forall! This thing should be unique!
-  "solve goal on kb with proof",
-  --if the solver is modeled as a function that always has to be specifically executed this becomes kinda cumbersome. Maybe determinism criterion should be enough, combined with some lookahead? Important thing is just that the KB can change...
-
-  --TODO: Better: define when a predicate is deterministic on a certain KB, and that the aim is to find the right KB for the job
-  --TODO: Determinism in execution only possible if no two rules overlap
-  --TODO: The problem needs to be expressed on the actual state object...with unassigned variables and stuff...
-  "solve goal on kb in state with proof" --the state expresses which variables are assigned. This could also be done by assigning all unassigned variables with some constant 'unassigned'.
-
-  "propagate state state' steps" --standard andorra propagation used to measure steps.
-  ""
+  --"solve goal proof",
+  "((pres :: prem0) in prems at n) -> "++
+  "(prem0 = post) -> "++
+  --note that pp is a term with variables, not a normal list
+  "(forall x ((x in pp) -> (t in prems at x) -> (solve t x) ))"++
+  "(solve (prems :: post) (n appl pp))"
+  --proving an implication is writing a program taking the premises as input and producing the posterior as an output
 
 ]
 testgoal = ["a v b"]

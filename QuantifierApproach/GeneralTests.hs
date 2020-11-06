@@ -58,16 +58,33 @@ testgoal6 = []
 --TODO: This is where the solving KB is explicitly needed!
 --also NOTE: I found out how goals can be encoded as implications and that the next state goals can just be added as normal goals, which just need to be lazily unquoted...that might be some huge convenience
 
+--solve S S'
+--A ^ (B -> D) ^ C |= G
+--A -> (B -> D) -> C -> G
+-- A -> B -> (A ^ B)
+--gets goal G, checks whether G is in KB. If yes terminate, if not, ask if (A -> G) is in KB, if yes, proof A
+-- A -> cA
+-- B -> cB
+-- proof (K ^ (K = cA)), where K is var. As soon as K is assigned e.g. cA, it propagates
+{-
+((A -> G) in KB) ->
+(G in A) ->
+(KB' is KB without (A -> G)) ->
+  (solve KB KB')
 
+solveTM KB MEM KB'
+
+solveTM (A v B) GOLEFT KB'
+solveTM (A v B) GORIGHT KB'
+-}
 --this should traverse in just one meta step
-testkb7 = ["forall (a b) (a -> (a v b))",
-           "forall (a b) (b -> (a v b))",
+testkb7 = ["a -> (a v b)",
+           "b -> (a v b)",
            "cA",
-           "forall (a b a' b' a'' b'' c d p1 p2) (solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
-                    --c as a placeholder for the solvingterm itself
-                    "((name forall b') -> ((name forall a') v (name forall b'))) -> c -> d -> "++
-                    "((name p1 a'') v (name p2 b''))" ++
-           ") (cA) )"]
+           "solve ( ((name forall a) -> ((name forall a) v (name forall b))) -> "++
+           "((name forall b') -> ((name forall a') v (name forall b'))) -> c -> d -> "++
+           "((name p1 a'') v (name p2 b''))" ++
+           ") cA )"]
 testgoal7 = ["a v b"]
 
 --this should traverse in just one meta step
