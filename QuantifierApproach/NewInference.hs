@@ -5,6 +5,42 @@ import TermFunctions
 import SpecialMatches
 
 
+
+{-
+(solve (q1' : A1) Q (q1prf = sth1) succeeds1) ->
+... ->
+(solve (qn' : An) Q (qnprf = sthn) succeedsn) ->
+(solve (q' : Q) Q (qnpprf = qkprf) succeedsq) -> --TODO: termination
+(choose [q1prf,...,qnpprf] qkprf) ->   --TODO: give the whole state
+(success = succeedsk) ->
+(solve (q : (q1 : A1) -> ... -> (qn : An) -> Q) Q (q q1'... qn' = qkprf) success)
+-}
+
+{-
+--TODO: IMPORTANT! WARNING! When having the disjunctive goals as parallel goals as well, DO NOT propagate by first fit first. That would result in a depth first search. Here, a proper scheduler is needed!
+
+(solve Ak G prf) -> (solve (A1 v ... v An) G k).
+(solve A1 G prf1) ->
+... ->
+(solve An G prfn) ->
+  (solve (A1 ^ ... ^ An) G (pfr1 ... prfn)).
+(solve (A1 ^ ... ^ An) G prf) -> (solve (A1 -> ... -> An -> G) G prf).
+
+--disjunctive case when doing everything at once:
+(solve A1 G prf1) ->
+... ->
+(solve An G prfn) ->
+(exactlyOne [prf1, ..., prfn] prfk) ->
+(solve (A1 v ... v An) G k)
+
+--generalised for better choosing:
+(solve A1 G prf1) ->
+... ->
+(solve An G prfn) ->
+(choose [prf1, ..., prfn] prfk) ->
+(solve (A1 v ... v An) G k)
+-}
+
 {-
 (proof ((p1 : P11 -> ... -> P1n1) ->
       ... -> (pn : Pn1 -> ... -> Pnnn) -> (pk1 : Pk1)) PEX) ->
@@ -23,7 +59,7 @@ import SpecialMatches
 (proof (porig : P) exorig)
 (oneof ([] :: ex1 :: ... :: exn))
 (exactlyOne ([] :: ex1 :: ... :: exn) exk) -> (porig = pk)
---all of these operated simultaneously, but they don't have to succeed. 
+--all of these operated simultaneously, but they don't have to succeed.
 -}
 
 
