@@ -4,7 +4,102 @@ import TermData
 import TermFunctions
 import SpecialMatches
 
+nextGoals :: KB -> Clause -> OpenTerm -> IntBindMonQuanT m [(KB, OpenTerm)]
+nextGoals kb (prems, post) goal = do {
+  unify post goal;
+  return [(kb, pre) | pre <- prems]
+}
 
+--problem: while only one goal is observed, all goals need to be propagated once a choice is made
+propagateDepth :: Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+propagateDepth 0 goals = return goals
+propagateDepth n goals = concat <$> (sequence $ [do {
+  possibs <- allSucceeding [nextGoals kb cls goal | cls <- kb]
+  case possibs of
+    [] -> throwE (CustomError "No proof possibilities left")
+    [(_,action)] -> action
+    disj -> [action >>= propagateDepth (n-1) | action <-(snd <$> disj)]
+} | (kb, goal) <- goals]}
+
+{-
+propagateDepth :: Int -> KB -> OpenTerm -> IntBindMonQuanT m [(KB, OpenTerm)]
+propagateDepth 0 kb goal = return [(kb, goal)]
+propagateDepth n kb goal = do {
+  possibs <- allSucceeding [nextGoals kb cls goal | cls <- kb]
+  case possibs of
+    [] -> throwE (CustomError "No proof possibilities left")
+    [(_,action)] -> action
+    disj -> allSucceeding
+}
+-}
+
+{-
+probably plain andorra thing needed. All branches spread out until one goal turns deterministic. This branch is then applied to the memory and all other branches are reevaluated.
+-}
+
+{-
+Every call to solve should be a DTM, starting at an assignment and walking through it. Occasionally, the path it takes depends on its run on the current assignment. However, this is not really the current, but more any assignment really.
+
+actually, it has a current state and does not know what choice to make. Now it searches for a general rule on how to proceed. This can be assignment specific, but does not have to be.
+When proving implications, it's like asking whether the thing is solvable on a different initial state. Parallel machine is started on a minimal definition of the state. This might branch again. If it does, additional assignments on the original state have to be propagated. Problem is: To model this, assignment needs to be explicit.
+
+solve asm prop goal prf succ asm'
+
+(solve asm A G prfA succA asmA') ->
+(solve asm B G prfB succB asmB') ->
+(choose [(left prfA,succA,asmA'), (left prfB,succB,asmB')]
+        (prf,true,asm')) ->
+(solve asm (A v B) G prf succ asm')
+
+(solve asm A G prfA succA asmA') ->
+(solve asm B G prfB succB asmB') ->
+(asm' = asmA') ->
+(asm' = asmB') ->
+(solve asm (A ^ B) G prf succ asm')
+
+The assignment should be a steadily growing object. However, there has to be the possibility to model the question for whether an error occurred. in this case, after simulating the error, the assignment needs to be made smaller again (backtracking), which cannot happen. Therefore, the assignment needs to be copied for asking potential questions. Sometimes however, that assignment needs to be remerged with the original assignment though. This is where proofs come into action. Applying a proof to an assignment should change the assignment the same way as it did in the original assignment.
+-}
+
+{-
+solve asm prop goal proof success
+--problem is the assignment changes with the proof. If the same assignment is referenced for the proof alternatives, it gets changed with them, which should only be the case if they succeed. So the branches should run on an isomorphic assignment that can be unified with the original one. This copying process could be made lazy in case the original assignment changes. Problem is that in that case, barely anything would change because it cannot be determined whether the assignment will ever change. Therefore, there have to be deductions made based on the current knowledge.
+
+assignments from unification cannot be made if it is unclear whether the unification should also be done in the original assignment. as this cannot be determined, it needs to be tried out using a split, which it can't as the split algorithm has not been completed.
+
+What if every algorithm just runs on its own assignment and pushes generally usable statements to the outside, whcih other algorithms can use again.
+
+General architecture: Don't just share the assignment of a value. Share the constraint put on that value. An assignment is just a set of those constraints.
+
+assignments need to be copied, proof needs to be produced, and proof is applied to original assignment. If the original assignment changed in the meantime, proofs need to be reevaluated. But it needs to be done on difference assignments, and each assignment needs to know what its origin was so that it can update.
+-}
+
+{-
+several programs, that run on different memory, but with shared variables. Problem: Their initial state is not known. It should be the initial assignment, which can change by some branches gatting information. As initial assignment can only grow, it could be modeled as a data stream that all branches are attached to, but that they can only communicate back to under some circumstances (like the assignment becomes unique).
+This could also be modeled by saying that when branching occurs, not all variables are exchanged (in fact, should be only those that are branched upon). Problem: What happens if such a variable gets assigned in a branch that does not necessarily have to succeed? In this case, variables would need copying, but then results don't traverse properly anymore. Therefore, one-sided stream structure needed. Original assignment can push new assignments into the branches. This new knowledge is then immediately propagated. A less general version of this can be modeled by keeping the branches with their initial memory and reevaluating them when that memory changes. This can flip a branch from succeeding to failing, meaning that its success value is a genuine different value. Therefore, the old idea of just putting the branches onto a stack for evaluation does not really work...they need to constantly be updated with their origin memory and their proofs need to be redone.
+-}
+
+{-
+same rules, but with better quoting mechanism (all constructors have names, everything is a list etc.)
+
+(append [] X X)
+(append XS Y ZS) -> (append (XS :: X) Y (ZS :: X))
+
+(mapOaa op [] [])
+(op L L') -> (mapOaa LS LS') -> (mapOaa op (LS :: L) (LS' :: L'))
+
+(fstOp op (A op B) A)
+(sndOp op (A op B) B)
+
+(mapOaa (fstOp :) prems prfs) ->
+(append prfs ([] :: p) premsprf) -> --q p1 ... pn = prf
+()
+(solve (p : (impl (prems :: Q)) ) Q (premsprf = prf) success)
+
+-}
+
+{-
+use same mechanic as before, but allow for sharing variables between branches?
+-}
 
 {-
 (solve (q1' : A1) Q (q1prf = sth1) succeeds1) ->
