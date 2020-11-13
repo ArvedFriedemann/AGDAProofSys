@@ -21,6 +21,8 @@ type Disj a = [a]
 type PossMap a b = [(a,[b])]
 type GoalToPossMap m = PossMap (KB,OpenTerm) (Clause, IntBindMonQuanT m Clause)
 type IdxGoalToPossMap m = PossMap (KB,OpenTerm) (Int, (Clause, IntBindMonQuanT m Clause))
+type GoalToNextStateMap m = PossMap (KB,OpenTerm) (IntBindMonQuanT m [(KB,OpenTerm)])
+type IdxGoalToNextStateMap m = PossMap (KB,OpenTerm) (Int, IntBindMonQuanT m [(KB,OpenTerm)])
 
 interactiveProof :: RawKB -> [(RawKB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof solvekb goals = do {
@@ -80,8 +82,33 @@ applyProofAction possm idx = do {
   return (newGoalsKB ++ oldGoalsKB)
 }
 
-splitProof :: (Monad m) => (GoalToPossMap m) -> [IntBindMonQuanT m [(KB,OpenTerm)]]
-splitProof possm = undefined --TODO
+propagateDepth :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+propagateDepth 0 goals = return goals
+propagateDepth n goals = do {
+  possm <- (bakeMap <$> possMapToIndices <$> proofPossibilities goals) >>= reduceMap;
+  possm' <- reduceMap [(goal, [action >>= propagateDepth (n-1) | action <- possibs] ) | (goal, possibs) <- possm];
+  if null possm'
+    then return []
+    else applySingleton possm' >>= propagateDepth n; --TODO: WARNING: This might not terminate...no fuel consumed for propagation step
+    --TODO: Make alternative termination by saying all possibilities are known (and one can be chosen freely)
+}
+
+applySingleton :: (Monad m) => (GoalToNextStateMap m) -> IntBindMonQuanT m [(KB,OpenTerm)]
+applySingleton possm = do {
+  midx <- return $ possMapIndexOfFirstSingleton possm;
+  case midx of
+    Just idx -> possMapGetIdx idx possm
+    Nothing -> throwE (CustomError "No singleton possibilities")
+}
+
+bakeMap :: (Monad m) => (IdxGoalToPossMap m) -> (GoalToNextStateMap m)
+bakeMap possm = [(goal, [applyProofAction (possMapRemIdx possm) idx | (idx,_) <- idxpossibs]) | (goal, idxpossibs) <- possm]
+
+reduceMap :: (Monad m) => (GoalToNextStateMap m) -> IntBindMonQuanT m (GoalToNextStateMap m)
+reduceMap possm = sequence [do {
+  newpossibs <- allSucceeding (map (\x -> x >> return x) possibs);
+  return (goal, newpossibs)
+} | (goal, possibs) <- possm]
 
 proofPossibilities :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m (GoalToPossMap m)
 proofPossibilities kbgoals = sequence [do {
@@ -190,6 +217,9 @@ possMapGetKeyWithIdx idx [] = error "index not in the map"
 possMapGetKeyWithIdx idx ((a, bs):lst) = if idx < (length bs)
                                         then a
                                         else (possMapGetKeyWithIdx (idx - (length bs)) lst)
+
+possMapRemIdx :: PossMap a (b,c) -> PossMap a c
+possMapRemIdx possm = [(g,[k | (_,k) <- ks]) | (g,ks) <- possm]
 
 --TODO: could that whole possibility and KB thing be done with trees? I mean...kinda should really...Inner nodes are premises, leafs are goals...multiple possibilities and stuff can be similar...
 
