@@ -43,8 +43,9 @@ interactiveProofPreread solvekb goals = do {
 
 interactiveProof' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof' solvekb goals = return goals >>=
-                          propagateProof >>=
-                          propagateProof' solvekb >>=
+                          propagateIteratingDepth >>=
+                          --propagateProof >>=
+                          --propagateProof' solvekb >>=
                           interactiveProof'' solvekb
 
 instantiateGoals :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
@@ -82,14 +83,25 @@ applyProofAction possm idx = do {
   return (newGoalsKB ++ oldGoalsKB)
 }
 
+propagateIteratingDepth :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+propagateIteratingDepth = propagateIteratingDepth' 0
+
+propagateIteratingDepth' :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+propagateIteratingDepth' n goals = catchE (propagateDepth n goals) (const $ propagateIteratingDepth' (n+1) goals)
+
 propagateDepth :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
-propagateDepth 0 goals = return goals
+propagateDepth _ [] = return []
+--TODO: Add termination criterion where it is known no goal can succeed...in this case iteration can be stopped.
+propagateDepth 0 goals = throwE (CustomError "insufficient fuel!")
 propagateDepth n goals = do {
-  possm <- (bakeMap <$> possMapToIndices <$> proofPossibilities goals) >>= reduceMap;
+  possm <- (bakeMap <$> possMapToIndices <$> proofPossibilities goals);
+  --TODO: somehow check whether the map has even changed in the first place...
   possm' <- reduceMap [(goal, [action >>= propagateDepth (n-1) | action <- possibs] ) | (goal, possibs) <- possm];
-  if null possm'
+  if possMapHasNull possm'
+    then throwE (CustomError "unprovable goals")
+  else if null possm'
     then return []
-    else applySingleton possm' >>= propagateDepth n; --TODO: WARNING: This might not terminate...no fuel consumed for propagation step
+    else applySingleton possm'>>= propagateDepth n; --TODO: WARNING: This might not terminate...no fuel consumed for propagation step
     --TODO: Make alternative termination by saying all possibilities are known (and one can be chosen freely)
 }
 
@@ -220,6 +232,9 @@ possMapGetKeyWithIdx idx ((a, bs):lst) = if idx < (length bs)
 
 possMapRemIdx :: PossMap a (b,c) -> PossMap a c
 possMapRemIdx possm = [(g,[k | (_,k) <- ks]) | (g,ks) <- possm]
+
+possMapHasNull :: PossMap a b -> Bool
+possMapHasNull possm = any null (snd <$> possm)
 
 --TODO: could that whole possibility and KB thing be done with trees? I mean...kinda should really...Inner nodes are premises, leafs are goals...multiple possibilities and stuff can be similar...
 

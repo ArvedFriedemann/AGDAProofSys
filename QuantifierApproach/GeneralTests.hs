@@ -189,6 +189,11 @@ testkb14 = [
 testgoal14 = []
 
 
+testkb15 = [
+  "A -> (A v B)",
+  "B -> (A v B)",
+  "cA"]
+testgoal15 = ["(cA v cB)"]
 
 
 prettykb0 = [ "subject (the car)",
