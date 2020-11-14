@@ -160,8 +160,8 @@ testkb12 = [
             "B -> (P -> ()) -> (if P then A else B)",
             "cA",
             "cB",
-            "x = x"]
-testgoal12 = ["first A then B X", "A -> "]
+            "cC -> ()"]
+testgoal12 = ["if cC then cB else cA"]
 --In general, determinism of a statement only comes when for a goal, all matching terms have an id that makes it unique which term was being used. Furthermore, the premises need to be ided as well. A proof is a KB with such IDs where each ided rule matches with the original axioms.
 
 --A test for the usage of proof theory

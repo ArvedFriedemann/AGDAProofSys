@@ -89,11 +89,15 @@ propagateIteratingDepth = propagateIteratingDepth' 0
 propagateIteratingDepth' :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
 propagateIteratingDepth' n goals = catchE (propagateDepth n goals) (const $ propagateIteratingDepth' (n+1) goals)
 
-propagateDepth :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
-propagateDepth _ [] = return []
+propagateDepth :: (Monad m) => Int -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+propagateDepth n goals =  preparationSequence goals >>=
+                          propagateDepthAfterInit n
+
+propagateDepthAfterInit :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+propagateDepthAfterInit _ [] = return []
 --TODO: Add termination criterion where it is known no goal can succeed...in this case iteration can be stopped.
-propagateDepth 0 goals = throwE (CustomError "insufficient fuel!")
-propagateDepth n goals = do {
+propagateDepthAfterInit 0 goals = throwE (CustomError "insufficient fuel!")
+propagateDepthAfterInit n goals = do {
   possm <- (bakeMap <$> possMapToIndices <$> proofPossibilities goals);
   --TODO: somehow check whether the map has even changed in the first place...
   possm' <- reduceMap [(goal, [action >>= propagateDepth (n-1) | action <- possibs] ) | (goal, possibs) <- possm];
