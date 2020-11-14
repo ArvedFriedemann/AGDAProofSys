@@ -193,7 +193,7 @@ testkb15 = [
   "A -> (A v B)",
   "B -> (A v B)",
   "cA"]
-testgoal15 = ["(cA v cB)"]
+testgoal15 = ["(X v cB)"]
 
 
 prettykb0 = [ "subject (the car)",
