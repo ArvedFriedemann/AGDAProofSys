@@ -1,0 +1,18 @@
+There are many formulations of a proof system, but essentially one is given an input formula that can be transformed by a set of rules. The output of the system is either a path to some designated state or the information that there is no such path. The search for this path can be interactive or automatic. The degree of automatism for a solving system is the amount of paths that can be automatically propagated. The aim of this research is to take a fully interactive system and a propagation method to turn the system into a fully automated solver.
+
+Every automatic system has to have a propagation function prop, here modelled as the predicate (prop S S') where S is some initial state and S' is a consecutive state exactly determined by S. There is a predicate (prop_rec S S') where S is the initial state and S' is a state after a recursive application of prop until a halting state is reached. Ideally, a solver M should be encoded as a formula, such that for every formula K, (prop_rec (M ^ K) S') propagates to a state S' that the result of the solver can be retrieved from.
+
+To get started a default propagation mechanism is fixed. For this, a version of the andorra principle is employed. Here, there are assumptions using Horn-Clauses of the form
+(A1 -> ... -> An) ^
+... ^
+(Z1 -> ... -> Zn)
+Such that for a given goal G, a path through resolution can be found. If that path is unique, so is the computation for the propagation and the applications for unification. As a rule of thumb, the propagation terminates iff there are no more unique paths to apply.
+
+The interesting part about sufficiently strong propagtations like the above method is that they can be formulated within themselves. Say a method called quoting (giving the representation of a term at a certain assignment) is applied, then the above prop predicate can be defined to simulate the andorra procedure itself (technical details ommitted for now).
+
+More general there are predicates that even give a representation of the path, called proof, that was taken by whatever propagation mechanism was used. Here, they will be called proof checker predicates. A predicate (check K proof success) checks whether the proof is valid for the formula K. Again, this predicate can be formulated to propagate deterministically with the employed propagation method. With andorra, if there is only one possible proof, this predicate even propagates to find the correct proof.
+
+A solving predicate (solve K proof success) is now a proof checker predicate that should propagate even when the proof is not unique. Therefore it can be constructed by taking a checker predicate and imposing additional constraints on the proof (whilst still preserving proof existence). An example would be not to apply the id in the proof unnecessarily often.
+As the solving predicate has to be some recursively applied predicate, there has to be some state transition predicate (solve_prop S S') similar to the propagation that can be used for induction proofs. The important part to notice here is that the proof created by the solving predicate can depend on the previous proof or even the entire internal state. This would be the case for a probabilistic proof search. If at a current state, always the path with the highest probability of success is taken, then the resulting proof will depend on the order of execution and the intermediate state of the solving process.
+
+More concrete, this means that...
