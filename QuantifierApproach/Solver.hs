@@ -14,16 +14,34 @@ import Control.Monad.Trans
 bounds = ["=","->","^","v","bot",":","[]"]
 
 stdTest = stdTest' bounds
+{-
+Tasks:
+proof checker predicate
+  just checks a proof. Turns deterministic once proof and proposition are fix.
+solving predicate on quoted terms
+  just a general solving predicate, constrained such that it outputs a proof of a quoted term
+solving predicate for state change
+  a predicate used in the solving process that modeles the states the system goes through. Might be related to the general solving predicate. The general predicate is called on its own state recursively.
+propagation predicate
+  a predicate to model the propagation behaviour of a formula. This needs to be tied to the actual propagation mechanism and needs to be strong enough to express deterministic computation.
+complexity proofs
+  Make sure the path taken is reasonable about ressources. This should further determinise the proof search! (when there are several proofs, take the fastest one. When there are several fastest, take a random one (or make propositions, whatever is best))
+-}
 
+{-
+solve kb G k p success
+(read as: Maybe k : (a1 : A1) -> ... -> (an : An) -> (p : G) ,
+with (ai : Ai) in kb)
+
+(solve ([ak : Ak1 -> ... -> Akn -> G,ak1 : Ak1,...,akn : Akn] subseteq [k : ... ,a1 : A1,...,an : An]) true) -> --this works with quoting methods...warning about assignment consistency
+(solve (k : (a1 : A1) -> ... -> (an : An) -> (ak ak1 ... akn : G)) success)
+
+where kb is just the set of premises (ai : Ai)
+which should just be some set (solve kbi gi pi si)
+the proof is the path taken through the kb
+-}
 testkb = [
-  --"solve goal proof",
-  "((pres :: prem0) in prems at n) -> "++
-  "(prem0 = post) -> "++
-  --note that pp is a term with variables, not a normal list
-  "(forall x ((x in pp) -> (t in prems at x) -> (solve t x) ))"++
-  "(solve (prems :: post) (n appl pp))"
-  --proving an implication is writing a program taking the premises as input and producing the posterior as an output
-
+  "(solve )"
 ]
 testgoal = ["a v b"]
 
