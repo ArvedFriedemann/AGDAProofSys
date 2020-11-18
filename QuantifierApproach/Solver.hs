@@ -14,6 +14,25 @@ import Control.Monad.Trans
 bounds = ["=","->","^","v","bot",":","[]"]
 
 stdTest = stdTest' bounds
+
+--TODO: this does not yet allow for splits nor termination check
+testkb = [
+  "(choose mergeop X (XS mergeop X))",
+  "(choose mergeop X XS) -> (choose mergeop X (XS mergeop Y))",
+  "(exchange x with y in x to y)",
+  "(exchange x with y in a to c) ->"++
+  "(exchange x with y in b to d) ->"++
+  "(exchange x with y in (a b) to (c d))",
+  --Include the recursion into the premises
+  "(PREM = (P => (p : (P => (prf : G)) )) )) -> "
+  --choose from the premises together with the recursive call
+  "(choose => (ak : (P' => (h1 : G)) ) PREM ) -> " ++
+  "(zipWith ) " --TODO for tomorrow: when to introduce new proof variables?
+  "(map2 (c1 c2) ( (check (c2 : (Prem => c1))) ) P') -> "++
+  "(check (p : (P => (prf : G)) ))"
+]
+testgoal = ["a v b"]
+
 {-
 Tasks:
 proof checker predicate
@@ -40,13 +59,7 @@ where kb is just the set of premises (ai : Ai)
 which should just be some set (solve kbi gi pi si)
 the proof is the path taken through the kb
 -}
-testkb = [
-  "(solve )"
-]
-testgoal = ["a v b"]
 
-
---TODO: remove possibilities if they (immediately) imply falsity
 
 
 --IDEA: The next KB and goals need to be deduced as well. so every time there is a decision, the state still having decisions is quoted and deducing the next of it is placed as a goal too, and then further evaluated. the next state stays incomplete, but can be further propagated if possible. It might be that this changes the order of deductions, but that should be fine as the result is always the same modulo isomorphism. fact is, that each state is quoted, put as a goal and deduced further, and the next state is its unquoted version (where possible). This can be modeled by letting the unquote afloat if impossible, just putting a variable where there ought to be a value. Therefore, unquoting can just be a special predicate, as it would only work on a fully instantiated value anyway.
