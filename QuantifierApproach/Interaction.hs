@@ -21,6 +21,8 @@ type Disj a = [a]
 type PossMap a b = [(a,[b])]
 type GoalToPossMap m = PossMap (KB,OpenTerm) (Clause, IntBindMonQuanT m Clause)
 type IdxGoalToPossMap m = PossMap (KB,OpenTerm) (Int, (Clause, IntBindMonQuanT m Clause))
+type GoalToNextStateMap m = PossMap (KB,OpenTerm) (IntBindMonQuanT m [(KB,OpenTerm)])
+type IdxGoalToNextStateMap m = PossMap (KB,OpenTerm) (Int, IntBindMonQuanT m [(KB,OpenTerm)])
 
 interactiveProof :: RawKB -> [(RawKB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof solvekb goals = do {
@@ -41,7 +43,8 @@ interactiveProofPreread solvekb goals = do {
 
 interactiveProof' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof' solvekb goals = return goals >>=
-                          propagateProof >>=
+                          propagateIteratingDepth >>=
+                          --propagateProof >>=
                           --propagateProof' solvekb >>=
                           interactiveProof'' solvekb
 
@@ -80,11 +83,55 @@ applyProofAction possm idx = do {
   return (newGoalsKB ++ oldGoalsKB)
 }
 
+propagateIteratingDepth :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+propagateIteratingDepth = propagateIteratingDepth' 0
+
+propagateIteratingDepth' :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+propagateIteratingDepth' n goals = catchE (propagateDepth n goals) (const $ propagateIteratingDepth' (n+1) goals)
+
+propagateDepth :: (Monad m) => Int -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
+propagateDepth n goals =  preparationSequence goals >>=
+                          propagateDepthAfterInit n
+
+propagateDepthAfterInit :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+propagateDepthAfterInit _ [] = return []
+--TODO: Add termination criterion where it is known no goal can succeed...in this case iteration can be stopped.
+propagateDepthAfterInit 0 goals = throwE (CustomError "insufficient fuel!")
+propagateDepthAfterInit n goals = do {
+  possm <- (bakeMap <$> possMapToIndices <$> proofPossibilities goals);
+  --TODO: somehow check whether the map has even changed in the first place...
+  possm' <- reduceMap [(goal, [action >>= propagateDepth (n-1) | action <- possibs] ) | (goal, possibs) <- possm];
+  if possMapHasNull possm'
+    then throwE (CustomError "unprovable goals")
+  else if null possm'
+    then return []
+    else applySingleton possm'>>= propagateDepth n; --TODO: WARNING: This might not terminate...no fuel consumed for propagation step
+    --TODO: Make alternative termination by saying all possibilities are known (and one can be chosen freely)
+}
+
+applySingleton :: (Monad m) => (GoalToNextStateMap m) -> IntBindMonQuanT m [(KB,OpenTerm)]
+applySingleton possm = do {
+  midx <- return $ possMapIndexOfFirstSingleton possm;
+  case midx of
+    Just idx -> possMapGetIdx idx possm
+    Nothing -> throwE (CustomError "No singleton possibilities")
+}
+
+bakeMap :: (Monad m) => (IdxGoalToPossMap m) -> (GoalToNextStateMap m)
+bakeMap possm = [(goal, [applyProofAction (possMapRemIdx possm) idx | (idx,_) <- idxpossibs]) | (goal, idxpossibs) <- possm]
+
+reduceMap :: (Monad m) => (GoalToNextStateMap m) -> IntBindMonQuanT m (GoalToNextStateMap m)
+reduceMap possm = sequence [do {
+  newpossibs <- allSucceeding (map (\x -> x >> return x) possibs);
+  return (goal, newpossibs)
+} | (goal, possibs) <- possm]
+
 proofPossibilities :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m (GoalToPossMap m)
 proofPossibilities kbgoals = sequence [do {
   bwp <- backwardPossibilities kb g; --backwardPossibilitiesMatchClause
   return ((kb,g), bwp)
 } | (kb,g) <- kbgoals]
+
 
 propagateProof' :: (Monad m) => KB -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateProof' _ [] = return []
@@ -127,6 +174,7 @@ propagateProofMETA solvekb goals  = do {
   --  else return (newgoals, solveOutState)
   return newgoals
 }
+
 
 printProofPossMap :: (IdxGoalToPossMap IO) -> IntBindMonQuanT IO ()
 printProofPossMap mp = void $ sequence [ do {
@@ -185,6 +233,12 @@ possMapGetKeyWithIdx idx [] = error "index not in the map"
 possMapGetKeyWithIdx idx ((a, bs):lst) = if idx < (length bs)
                                         then a
                                         else (possMapGetKeyWithIdx (idx - (length bs)) lst)
+
+possMapRemIdx :: PossMap a (b,c) -> PossMap a c
+possMapRemIdx possm = [(g,[k | (_,k) <- ks]) | (g,ks) <- possm]
+
+possMapHasNull :: PossMap a b -> Bool
+possMapHasNull possm = any null (snd <$> possm)
 
 --TODO: could that whole possibility and KB thing be done with trees? I mean...kinda should really...Inner nodes are premises, leafs are goals...multiple possibilities and stuff can be similar...
 
