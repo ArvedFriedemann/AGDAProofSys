@@ -26,7 +26,7 @@ testkb = [
   "(choose mergeop X (XS mergeop X))",
   "(choose mergeop X XS) -> (choose mergeop X (XS mergeop Y))",
 
-  "(recurseProofs prems (true : T) init init)",
+  "(recurseProofs prems (x : T) init init)",
   "(recurseProofs prems PS init prf) -> " ++
   "(check (p : (prems => (newprf : P)) )) -> " ++ --TODO: if this recurses, some with clause is needed!
   "(recurseProofs prems (PS => (oldp : P)) init (prf newprf))",
