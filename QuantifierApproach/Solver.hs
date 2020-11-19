@@ -13,32 +13,37 @@ import Control.Monad.Trans
 
 bounds = ["=","->","^","v","bot",":","::","[]","=>","true","false",
           "choose", "recurseProofs", "check",
-          "c0","c1","c2","c3","c4","c5","c6","c7","c8","c9"]
+          "c0","c1","c2","c3","c4","c5","c6","c7","c8","c9",
+          "t0","t1","t2","t3","t4","t5","t6","t7","t8","t9"]
 
 stdTest = stdTest' False bounds
 stdTestUniv = stdTest' True bounds
 
 --TODO: this does not yet allow for splits nor termination check
+--TODO: refreshing of types
 testkb = [
-  "X = X",
+  --"X = X",
   "(choose mergeop X (XS mergeop X))",
   "(choose mergeop X XS) -> (choose mergeop X (XS mergeop Y))",
 
   "(recurseProofs prems (true : T) init init)",
   "(recurseProofs prems PS init prf) -> " ++
-  "(check (prems => (newprf : P))) -> " ++
+  "(check (p : (prems => (newprf : P)) )) -> " ++ --TODO: if this recurses, some with clause is needed!
   "(recurseProofs prems (PS => (oldp : P)) init (prf newprf))",
 
-  "check (true : T)",
+  "check (A : T)", --Anything proofs true (no universe polymorphism)
   --Include the recursion into the premises
   --"(PREM = (P => (p : (P => (prf : G)) )) ) -> "++
-  "(PREM = P ) -> "++
+  --"(PREM = P ) -> "++
   --choose from the premises together with the recursive call
-  "(choose => (ak : (P' => (h1 : G)) ) PREM ) -> " ++
-  "(recurseProofs PREM P' ak prf) -> "++
+  "(choose => (ak : (P' => (h1 : G)) ) P ) -> " ++
+  "(recurseProofs P P' ak prf) -> "++
   "(check (p : (P => (prf : G)) ))"
   ]
-testgoal = ["check (c0 : ((true : T) => (c1 : ((true : T) => (c3 : c2))) => (prf : c2)) )"]
+testgoal0 = ["check (c0 : ((A : T) => (c1 : ((h1 : T) => (c3 : A))) => (prf : A)) )"]
+testgoal1 = ["check (c0 : ((t2 : T) => (c4 : ((h1 : T) => (c3 : t1) => (c5 : t2) )) => (c1 : ((h1 : T) => (c6 : t1))) => (prf : t2)) )"]
+
+
 
 {-
 Tasks:
