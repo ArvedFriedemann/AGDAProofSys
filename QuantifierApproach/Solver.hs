@@ -11,27 +11,34 @@ import SpecialMatches
 import Control.Unification
 import Control.Monad.Trans
 
-bounds = ["=","->","^","v","bot",":","[]"]
+bounds = ["=","->","^","v","bot",":","::","[]","=>","true","false",
+          "choose", "recurseProofs", "check",
+          "c0","c1","c2","c3","c4","c5","c6","c7","c8","c9"]
 
-stdTest = stdTest' bounds
+stdTest = stdTest' False bounds
+stdTestUniv = stdTest' True bounds
 
 --TODO: this does not yet allow for splits nor termination check
 testkb = [
+  "X = X",
   "(choose mergeop X (XS mergeop X))",
   "(choose mergeop X XS) -> (choose mergeop X (XS mergeop Y))",
-  "(exchange x with y in x to y)",
-  "(exchange x with y in a to c) ->"++
-  "(exchange x with y in b to d) ->"++
-  "(exchange x with y in (a b) to (c d))",
+
+  "(recurseProofs prems (true : T) init init)",
+  "(recurseProofs prems PS init prf) -> " ++
+  "(check (prems => (newprf : P))) -> " ++
+  "(recurseProofs prems (PS => (oldp : P)) init (prf newprf))",
+
+  "check (true : T)",
   --Include the recursion into the premises
-  "(PREM = (P => (p : (P => (prf : G)) )) )) -> "
+  --"(PREM = (P => (p : (P => (prf : G)) )) ) -> "++
+  "(PREM = P ) -> "++
   --choose from the premises together with the recursive call
   "(choose => (ak : (P' => (h1 : G)) ) PREM ) -> " ++
-  "(zipWith ) " --TODO for tomorrow: when to introduce new proof variables?
-  "(map2 (c1 c2) ( (check (c2 : (Prem => c1))) ) P') -> "++
+  "(recurseProofs PREM P' ak prf) -> "++
   "(check (p : (P => (prf : G)) ))"
-]
-testgoal = ["a v b"]
+  ]
+testgoal = ["check (c0 : ((true : T) => (c1 : ((true : T) => (c3 : c2))) => (prf : c2)) )"]
 
 {-
 Tasks:
