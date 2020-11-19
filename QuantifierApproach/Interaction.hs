@@ -59,8 +59,8 @@ instantiateGoals goals = sequence [do {
 interactiveProof'' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof'' _ []  = return ()
 interactiveProof'' solvekb goals = do {
+  printState goals;
   possm <- proofPossibilities goals;
-  printProofPossMap (possMapToIndices possm);
 
   lift3 $ putStrLn $ "Please enter step index:";
 
@@ -73,6 +73,12 @@ interactiveProof'' solvekb goals = do {
   else (lift3 $ putStrLn "invalid Index...") >> interactiveProof' solvekb goals
 }
 
+printState :: [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
+printState goals = do {
+  possm <- proofPossibilities goals;
+  printProofPossMap (possMapToIndices possm);
+}
+
 applyProofAction :: (Monad m) => GoalToPossMap m -> Int -> IntBindMonQuanT m [(KB,OpenTerm)]
 applyProofAction possm idx = do {
   (newGoals, oldG) <- snd $ possMapGetIdx idx possm;
@@ -83,11 +89,23 @@ applyProofAction possm idx = do {
   return (newGoalsKB ++ oldGoalsKB)
 }
 
-propagateIteratingDepth :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+--propagateIteratingDepth :: (Monad m) => [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+propagateIteratingDepth :: [(KB,OpenTerm)] -> IntBindMonQuanT IO [(KB,OpenTerm)]
 propagateIteratingDepth = propagateIteratingDepth' 0
 
-propagateIteratingDepth' :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
-propagateIteratingDepth' n goals = catchE (propagateDepth n goals) (const $ propagateIteratingDepth' (n+1) goals)
+--propagateIteratingDepth' :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
+propagateIteratingDepth' :: Int -> [(KB,OpenTerm)] -> IntBindMonQuanT IO [(KB,OpenTerm)]
+propagateIteratingDepth' n goals = catchE (do {
+    goals' <- propagateDepth n goals;
+
+    (lift3.putStrLn) $ "\n\n\n\n\n(depth "++(show n)++" after propagation)<><><><><><><>";
+    printState goals';
+
+    if null goals'
+      then return goals'
+      else throwE (CustomError "Not all goals fulfilled") --Looks dirty, but isn't. This is better for updating n
+      --TODO: This fails if after applying several singletonians, there is no singletonian left to applied, but then throws away the applications! This cannot happen!
+  }) (const $ (traceM $ "(depth "++(show n)++" all failed)") >> propagateIteratingDepth' (n+1) goals)
 
 propagateDepth :: (Monad m) => Int -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateDepth n goals =  preparationSequence goals >>=
@@ -96,16 +114,20 @@ propagateDepth n goals =  preparationSequence goals >>=
 propagateDepthAfterInit :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
 propagateDepthAfterInit _ [] = return []
 --TODO: Add termination criterion where it is known no goal can succeed...in this case iteration can be stopped.
-propagateDepthAfterInit 0 goals = throwE (CustomError "insufficient fuel!")
+propagateDepthAfterInit 0 goals = return goals --should stop, but should not fail! Branch might still be alive!--throwE (CustomError "insufficient fuel!")
 propagateDepthAfterInit n goals = do {
   possm <- (bakeMap <$> possMapToIndices <$> proofPossibilities goals);
   --TODO: somehow check whether the map has even changed in the first place...
   possm' <- reduceMap [(goal, [action >>= propagateDepth (n-1) | action <- possibs] ) | (goal, possibs) <- possm];
+
+  traceShowM (n,possMapLength possm, possMapLength possm');
+
   if possMapHasNull possm'
     then throwE (CustomError "unprovable goals")
   else if null possm'
     then return []
-    else applySingleton possm'>>= propagateDepth n; --TODO: WARNING: This might not terminate...no fuel consumed for propagation step
+    else catchE (applySingleton possm' >>= propagateDepth n) (const $ return goals) ; --TODO: WARNING: This might not terminate...no fuel consumed for propagation step
+    --TODO: Is there a way here to state that not all goals have to be redone after this?
     --TODO: Make alternative termination by saying all possibilities are known (and one can be chosen freely)
 }
 
@@ -175,6 +197,12 @@ propagateProofMETA solvekb goals  = do {
   return newgoals
 }
 
+{-
+printGoalToNextStateMap :: (IdxGoalToNextStateMap IO) -> IntBindMonQuanT IO ()
+printGoalToNextStateMap mp = void $ sequence [ do {
+
+} | (goal, branches) <- mp]
+-}
 
 printProofPossMap :: (IdxGoalToPossMap IO) -> IntBindMonQuanT IO ()
 printProofPossMap mp = void $ sequence [ do {
