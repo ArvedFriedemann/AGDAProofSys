@@ -18,6 +18,7 @@ bounds = ["=","->","^","v","bot",":","::","[]","=>","true","false",
 
 stdTest = stdTest' False bounds
 stdTestUniv = stdTest' True bounds
+stdTestUnivBounds b = stdTest' True (bounds ++ b)
 
 --TODO: this does not yet allow for splits nor termination check
 --TODO: refreshing of types
@@ -65,17 +66,24 @@ where the split is possible iff there is a disjunction present, like
 (left : (a : A) -> (left a : A v B)) v (right : (b : B) -> (right b : A v B))
 This however only states that these are two possibilities. It does not state that if both are proven, it holds forall avb : A v B. This would allow for several possible definitions of avb. While this is fine for proofs, it is hard to transform into a program.
 With the disjunction elimination rule that would be a bit easier. Then, one needs to have at least the rule that disjunctions elimination works and a program could rely on it. In this setting, the proof procedure would stay the same, and there wouldn't even be a switching of variables (old proof still available). For this, there would only need to be the possibility to prove implications by adding their premises (which I think was already done). Therefore, only the specific disjunction elim rule needs to be part of the premises and everything is ok.
-(avb : A v B) -> (left : (a : A) -> (p1 : C)) -> (right : (b : B) -> (p2 : C)) -> (splitv avb p1 p2 : C)
+splitv : (avb : A v B) -> (left : (a : A) -> (p1 : C)) -> (right : (b : B) -> (p2 : C)) -> (splitv avb p1 p2 : C)
 For nicer output, these splits would need to be translated into new proof lines, which would need to reference the context in which the rule was applied. The rule itself does not tell how avb is supposed to look like, but its realisor would need to choose an interface to avb that allows for this distinction.
 
 Side note: This makes termination checking easy. Never allow the recursion to be used in the proof directly, but just give it as an input to the downward recursion. Within the splits already it is valid to use. However, it needs to be made sure that one of the arguments from the split is being used. Therefore, the recursion could be optionally given if it is applied to the splitted agrument.
 -}
 
-splitkb = [
-  "",
+splitgoal0bounds = []
+splitgoal0 = [
+"check ((t0 : T) => (avb : (A v B)) => " ++
+"(splitv : (t1 : T) => (avb' : A v B) => (left : ((t2 : T) => (a : A) => (p1 : C)) ) => (right : ((t2 : T) => (b : B) => (p2 : C)) ) => ((splitv avb' p1 p2) : C) ) => " ++
+"(c1 : ((t3 : T) => (a' : A) => (c2 : C))) => " ++
+"(c3 : ((t3 : T) => (b' : B) => (c4 : C))) => " ++
+"(prf : C) )"
 ]
 
-splitgoal0 = []
+{-
+Issues: first of all, the whole function instantiation thing does not work well yet. Second: it is not yet sure whether implications can be properly proven. When the goal is an implication, it should work, but I never tried.
+-}
 
 
 {-
