@@ -14,7 +14,8 @@ import Control.Monad.Trans
 bounds = ["=","->","^","v","bot",":","::","[]","=>","true","false",
           "choose", "recurseProofs", "check",
           "c0","c1","c2","c3","c4","c5","c6","c7","c8","c9",
-          "t0","t1","t2","t3","t4","t5","t6","t7","t8","t9"]
+          "t0","t1","t2","t3","t4","t5","t6","t7","t8","t9",
+          "cA","cB","cC","cD","cE","cF","cG","cH","cI","cJ"]
 
 stdTest = stdTest' False bounds
 stdTestUniv = stdTest' True bounds
@@ -39,10 +40,15 @@ checkkb = [
   --choose from the premises together with the recursive call
   "(choose => (ak : (P' => (h1 : G)) ) P ) -> " ++
   "(recurseProofs P P' ak prf) -> "++
-  "(check (p : (P => (prf : G)) ))"
+  "(check (p : (P => (prf : G)) ))",
+  "(check (p : (P => prems => (prf : G))) ) -> "++
+  "(check (p : (P => (prf : (prems => G)))) )"--This is new
   ]
 checkgoal0 = ["check (c0 : ((A : T) => (c1 : ((h1 : T) => (c3 : A))) => (prf : A)) )"]
 checkgoal1 = ["check (c0 : ((t2 : T) => (c4 : ((h1 : T) => (c3 : t1) => (c5 : t2) )) => (c1 : ((h1 : T) => (c6 : t1))) => (prf : t2)) )"]
+
+implgoal0 = ["check (c2 : ((t1 : T) => (c3 : ((t2 : T) => (c5 : cA) => (c6 : cB))) => (c0 : ((t0 : T) => (c1 : cA) => (prf : cB))) ))"]
+
 
 
 {-
@@ -72,17 +78,18 @@ For nicer output, these splits would need to be translated into new proof lines,
 Side note: This makes termination checking easy. Never allow the recursion to be used in the proof directly, but just give it as an input to the downward recursion. Within the splits already it is valid to use. However, it needs to be made sure that one of the arguments from the split is being used. Therefore, the recursion could be optionally given if it is applied to the splitted agrument.
 -}
 
-splitgoal0bounds = []
+splitgoal0bounds = ["p","splitv","left","right","cac","cbc"]
 splitgoal0 = [
-"check ((t0 : T) => (avb : (A v B)) => " ++
-"(splitv : (t1 : T) => (avb' : A v B) => (left : ((t2 : T) => (a : A) => (p1 : C)) ) => (right : ((t2 : T) => (b : B) => (p2 : C)) ) => ((splitv avb' p1 p2) : C) ) => " ++
-"(c1 : ((t3 : T) => (a' : A) => (c2 : C))) => " ++
-"(c3 : ((t3 : T) => (b' : B) => (c4 : C))) => " ++
-"(prf : C) )"
-]
+  "check (p : ((t0 : T) => (avb : (cA v cB)) => " ++
+  "(splitv : ((t1 : T) => (avb' : A v B) => (left : ((t2 : T) => (a : A) => (p1 : C)) ) => (right : ((t2 : T) => (b : B) => (p2 : C)) ) => ((splitv avb' p1 p2) : C)) ) => " ++
+  "(cac : ((t3 : T) => (a' : cA) => (c2 : cC))) => " ++
+  "(cbc : ((t3 : T) => (b' : cB) => (c4 : cC))) => " ++
+  "(prf : cC) ))"
+  ]
 
 {-
 Issues: first of all, the whole function instantiation thing does not work well yet. Second: it is not yet sure whether implications can be properly proven. When the goal is an implication, it should work, but I never tried.
+Generally: Whenever one goes into the proof recursion, the proof variables of the applied rule should be refreshed.
 -}
 
 

@@ -43,7 +43,7 @@ interactiveProofPreread solvekb goals = do {
 
 interactiveProof' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof' solvekb goals = return goals >>=
-                          propagateIteratingDepth >>=
+                          --propagateIteratingDepth >>=
                           --propagateProof >>=
                           --propagateProof' solvekb >>=
                           interactiveProof'' solvekb
@@ -105,7 +105,7 @@ propagateIteratingDepth' n goals = catchE (do {
       then return goals'
       else throwE (CustomError "Not all goals fulfilled") --Looks dirty, but isn't. This is better for updating n
       --TODO: This fails if after applying several singletonians, there is no singletonian left to applied, but then throws away the applications! This cannot happen!
-  }) (const $ (traceM $ "(depth "++(show n)++" all failed)") >> propagateIteratingDepth' (n+1) goals)
+  }) (const $ propagateIteratingDepth' (n+1) goals)
 
 propagateDepth :: (Monad m) => Int -> [(KB, OpenTerm)] -> IntBindMonQuanT m [(KB, OpenTerm)]
 propagateDepth n goals =  preparationSequence goals >>=
@@ -120,7 +120,7 @@ propagateDepthAfterInit n goals = do {
   --TODO: somehow check whether the map has even changed in the first place...
   possm' <- reduceMap [(goal, [action >>= propagateDepth (n-1) | action <- possibs] ) | (goal, possibs) <- possm];
 
-  traceShowM (n,possMapLength possm, possMapLength possm');
+  --traceShowM (n,possMapLength possm, possMapLength possm');
 
   if possMapHasNull possm'
     then throwE (CustomError "unprovable goals")
