@@ -21,7 +21,7 @@ stdTestUniv = stdTest' True bounds
 
 --TODO: this does not yet allow for splits nor termination check
 --TODO: refreshing of types
-testkb = [
+checkkb = [
   --"X = X",
   "(choose mergeop X (XS mergeop X))",
   "(choose mergeop X XS) -> (choose mergeop X (XS mergeop Y))",
@@ -40,10 +40,51 @@ testkb = [
   "(recurseProofs P P' ak prf) -> "++
   "(check (p : (P => (prf : G)) ))"
   ]
-testgoal0 = ["check (c0 : ((A : T) => (c1 : ((h1 : T) => (c3 : A))) => (prf : A)) )"]
-testgoal1 = ["check (c0 : ((t2 : T) => (c4 : ((h1 : T) => (c3 : t1) => (c5 : t2) )) => (c1 : ((h1 : T) => (c6 : t1))) => (prf : t2)) )"]
+checkgoal0 = ["check (c0 : ((A : T) => (c1 : ((h1 : T) => (c3 : A))) => (prf : A)) )"]
+checkgoal1 = ["check (c0 : ((t2 : T) => (c4 : ((h1 : T) => (c3 : t1) => (c5 : t2) )) => (c1 : ((h1 : T) => (c6 : t1))) => (prf : t2)) )"]
 
 
+{-
+A split can be performed on things with rules like
+(avb : A v B) -> (pl : A -> C) -> (pr : B -> C) -> (split ((left a) = pl) ((right b) = pr) : C)
+More arbitrarily:
+(k : K) -> (p1 : P1 -> C) -> ... -> (pn : Pn -> C) -> (prf : C)
+If this holds, to proof ((k : K) -> C), there can be several lines where k is exchanged by the constructors p1 ... pn, together with a split constructor. In order to have this be executable, there needs to be another function
+(avb : A v B) -> (left a : A) v (right b : B)
+that can extract which of the constructors created the proof. This could technically be done with the concrete proofs, as in this case there should only be
+(left a : A v B) and (right b : A v B)
+Problem here is ensuring this to be always possible. If there are several different ways to create the same type it is no longer sure that this splitting can always occur (there would need to be a transformation).
+There can be a statement stating:
+((left : A -> A v B) ^ (left a : A v B)) v ((right : B -> A v B) ^ (right b : A v B))
+(avb : A v B) -> (left a : A v B) v (right b : A v B)
+maybe with a more designated disjunction. This would be a data declaration. A split could then be just all disjunctive parts put into the proof.
+
+Generally speaking we get the same proof line, but with exchanged proof variables. So there is not one but a list of proof outcomes. So
+(avb : A v B) -> (split avb p1 p2 : A v B)
+where the split is possible iff there is a disjunction present, like
+(left : (a : A) -> (left a : A v B)) v (right : (b : B) -> (right b : A v B))
+This however only states that these are two possibilities. It does not state that if both are proven, it holds forall avb : A v B. This would allow for several possible definitions of avb. While this is fine for proofs, it is hard to transform into a program.
+With the disjunction elimination rule that would be a bit easier. Then, one needs to have at least the rule that disjunctions elimination works and a program could rely on it. In this setting, the proof procedure would stay the same, and there wouldn't even be a switching of variables (old proof still available). For this, there would only need to be the possibility to prove implications by adding their premises (which I think was already done). Therefore, only the specific disjunction elim rule needs to be part of the premises and everything is ok.
+(avb : A v B) -> (left : (a : A) -> (p1 : C)) -> (right : (b : B) -> (p2 : C)) -> (splitv avb p1 p2 : C)
+For nicer output, these splits would need to be translated into new proof lines, which would need to reference the context in which the rule was applied. The rule itself does not tell how avb is supposed to look like, but its realisor would need to choose an interface to avb that allows for this distinction.
+
+Side note: This makes termination checking easy. Never allow the recursion to be used in the proof directly, but just give it as an input to the downward recursion. Within the splits already it is valid to use. However, it needs to be made sure that one of the arguments from the split is being used. Therefore, the recursion could be optionally given if it is applied to the splitted agrument.
+-}
+
+splitkb = [
+  "",
+]
+
+splitgoal0 = []
+
+
+{-
+Theory of splitting due to disjunction elimination rule
+(A v B) -> (A -> C) -> (B -> C) -> C
+In AGDA done with data declarations. In this model, something different is needed like
+(left : (a : A) -> (pl : C)) -> (right : (b : B) -> (pr : C)) -> (split (left a = pl) (right b = pr) : C)
+This proof can be done without premises. If for all possible premises it holds its a proof. Whats still needed is the possibility to proof implications by assuming the premises in the KB.
+-}
 
 {-
 Tasks:
