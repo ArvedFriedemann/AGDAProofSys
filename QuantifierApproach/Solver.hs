@@ -52,8 +52,8 @@ checkkb = [
   "(check (p : (P => (ak : G)) ))",
   --have the premises of the to be proven implication be actual premises.
   "(concat ((h1 : T) =>) P prems P') -> "++
-  "(check (p : (P' => G)) ) -> "++
-  "(check (p : (P => (prf : (prems => G)))) )"--This is new
+  "(check (p : (P' => (prf : G))) ) -> "++
+  "(check (p : (P => (prf : (prems => (prf : G))))) )"--This is new
   ]
 checkgoal0 = ["check (c0 : ((c3 : cA) => (prf : cA)) )"]
 checkgoal1 = ["check (c0 : ((c4 : ((c3 : cA) => (c5 : cB)) ) => (c1 : cA) => (prf : cB) ) )"]
@@ -103,6 +103,11 @@ splitgoal0 = [
   "(cbc : ((b' : cB) => (c4 : cC))) => " ++
   "(prf : cC) ))"
   ]
+
+{-
+Original goals:
+check (p : (avb : (cA v cB) => (splitv : (z4 : (cA v cB) => (left : (z2 : cA => (cac z2 : cC))) => (rigt : (z5 : cB => (cbc z5 : cC))) => (splitv z4 (cac z2) (cbc z5) : cC))) => (cac : (z3 : cA => (c2 : cC))) => (cbc : (z6 : cB => (c4 : cC))) => (splitv avb (cac z2) (cbc z5) : cC)))
+-}
 
 {-
 Issues: first of all, the whole function instantiation thing does not work well yet. Second: it is not yet sure whether implications can be properly proven. When the goal is an implication, it should work, but I never tried.
