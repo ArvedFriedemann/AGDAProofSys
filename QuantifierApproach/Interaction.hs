@@ -43,7 +43,7 @@ interactiveProofPreread solvekb goals = do {
 
 interactiveProof' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof' solvekb goals = return goals >>=
-                          --propagateIteratingDepth >>=
+                          propagateIteratingDepth >>=
                           --propagateProof >>=
                           --propagateProof' solvekb >>=
                           interactiveProof'' solvekb
@@ -114,11 +114,15 @@ propagateDepth n goals =  preparationSequence goals >>=
 propagateDepthAfterInit :: (Monad m) => Int -> [(KB,OpenTerm)] -> IntBindMonQuanT m [(KB,OpenTerm)]
 propagateDepthAfterInit _ [] = return []
 --TODO: Add termination criterion where it is known no goal can succeed...in this case iteration can be stopped.
-propagateDepthAfterInit 0 goals = return goals --should stop, but should not fail! Branch might still be alive!--throwE (CustomError "insufficient fuel!")
+propagateDepthAfterInit 0 goals = return goals {-should stop, but should not fail! Branch might still be alive!-}{-throwE (CustomError "insufficient fuel!")-}
 propagateDepthAfterInit n goals = do {
   possm <- (bakeMap <$> possMapToIndices <$> proofPossibilities goals);
   --TODO: somehow check whether the map has even changed in the first place...
   possm' <- reduceMap [(goal, [action >>= propagateDepth (n-1) | action <- possibs] ) | (goal, possibs) <- possm];
+  {-
+  --this was an attempt to apply rules already when they are not quite fix, to favour short solutions. Problem: There is no backtracking when things go wrong, so the solution space si eternally fixed.
+  possmred <- reduceMap [(goal, [action >>= propagateDepth (n-1) >>= (\x -> guard ((not.null) x) >> return x) | action <- possibs] ) | (goal, possibs) <- possm];
+  -}
 
   --traceShowM (n,possMapLength possm, possMapLength possm');
 
@@ -126,7 +130,7 @@ propagateDepthAfterInit n goals = do {
     then throwE (CustomError "unprovable goals")
   else if null possm'
     then return []
-    else catchE (applySingleton possm' >>= propagateDepth n) (const $ return goals) ; --TODO: WARNING: This might not terminate...no fuel consumed for propagation step
+    else catchE (applySingleton possm' {-possmred-} >>= propagateDepth n) (const $ return goals) ; --TODO: WARNING: This might not terminate...no fuel consumed for propagation step
     --TODO: Is there a way here to state that not all goals have to be redone after this?
     --TODO: Make alternative termination by saying all possibilities are known (and one can be chosen freely)
 }
