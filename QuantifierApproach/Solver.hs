@@ -107,19 +107,21 @@ splitgoal0 = [
 Original goals:
 check (p : (avb : (cA v cB) => (splitv : (z4 : (cA v cB) => (left : (z2 : cA => (cac z2 : cC))) => (rigt : (z5 : cB => (cbc z5 : cC))) => (splitv z4 (cac z2) (cbc z5) : cC))) => (cac : (z3 : cA => (c2 : cC))) => (cbc : (z6 : cB => (c4 : cC))) => (splitv avb (cac z2) (cbc z5) : cC)))
 
---with extra bounds for readability
-Original goals:
-check (p : (avb : (cA v cB) => (splitv : (avb' : (cA v cB) => (left : (a : cA => (cac a : cC))) => (rigt : (b : cB => (cbc b : cC))) => (splitv avb' (cac a) (cbc b) : cC))) => (cac : (a' : cA => (c2 : cC))) => (cbc : (b' : cB => (c4 : cC))) => (splitv avb (cac a) (cbc b) : cC)))
 
 -}
 
 --this is to test whether at least the solution of splitgoal0 propagates
 splitgoal1bounds = ["p","splitv","left","rigt","avb","cac","cbc","avb'","a'","b'","a","b"]
 splitgoal1 = [
-  "check (p : (avb : (cA v cB) => (splitv : (avb' : (cA v cB) => (left : (a : cA => (cac a : cC))) => (rigt : (b : cB => (cbc b : cC))) => (splitv avb (cac a) (cbc b) : cC))) => (cac : (a' : cA => (c2 : cC))) => (cbc : (b' : cB => (c4 : cC))) => (splitv avb (cac z2) (cbc z5) : cC)))"
+  "check (p : (avb : (cA v cB) => (splitv : (avb' : (cA v cB) => (left : (a : cA => (cac a : cC))) => (rigt : (b : cB => (cbc b : cC))) => (splitv avb' (cac a) (cbc b) : cC))) => (cac : (a' : cA => (c2 : cC))) => (cbc : (b' : cB => (c4 : cC))) => (splitv avb (cac a) (cbc b) : cC)))"
   ]
 
+{-
 
+--with extra bounds for readability
+Original goals:
+check (p : (avb : (cA v cB) => (splitv : (avb' : (cA v cB) => (left : (a : cA => (cac a : cC))) => (rigt : (b : cB => (cbc b : cC))) => (splitv avb' (cac a) (cbc b) : cC))) => (cac : (a' : cA => (c2 : cC))) => (cbc : (b' : cB => (c4 : cC))) => (splitv avb (cac a) (cbc b) : cC)))
+-}
 
 {-
 Issues: first of all, the whole function instantiation thing does not work well yet. Second: it is not yet sure whether implications can be properly proven. When the goal is an implication, it should work, but I never tried.
