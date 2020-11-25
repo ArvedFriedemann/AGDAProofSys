@@ -90,12 +90,17 @@ For nicer output, these splits would need to be translated into new proof lines,
 Side note: This makes termination checking easy. Never allow the recursion to be used in the proof directly, but just give it as an input to the downward recursion. Within the splits already it is valid to use. However, it needs to be made sure that one of the arguments from the split is being used. Therefore, the recursion could be optionally given if it is applied to the splitted agrument.
 -}
 
-splitgoal0bounds = ["p","splitv","left","right","cac","cbc"]
+
+--TODO: Problem with this one: splitv can always be applied, which means that an infinite proof is always possible -.-
+splitgoal0bounds = ["p","splitv","left","rigt","avb","cac","cbc"]
 splitgoal0 = [
-  "check (p : ((t0 : T) => (avb : (cA v cB)) => " ++
-  "(splitv : ((t1 : T) => (avb' : A v B) => (left : ((t2 : T) => (a : A) => (p1 : C)) ) => (right : ((t2 : T) => (b : B) => (p2 : C)) ) => ((splitv avb' p1 p2) : C)) ) => " ++
-  "(cac : ((t3 : T) => (a' : cA) => (c2 : cC))) => " ++
-  "(cbc : ((t3 : T) => (b' : cB) => (c4 : cC))) => " ++
+  "check (p : ( (avb : (cA v cB)) => " ++
+  "(splitv : ((avb' : (cA v cB)) => " ++
+    "(left : ((a : cA) => (p1 : cC)) ) => " ++
+    "(rigt : ((b : cB) => (p2 : cC)) ) => " ++
+    "((splitv avb' p1 p2) : cC)) ) => " ++
+  "(cac : ((a' : cA) => (c2 : cC))) => " ++
+  "(cbc : ((b' : cB) => (c4 : cC))) => " ++
   "(prf : cC) ))"
   ]
 
