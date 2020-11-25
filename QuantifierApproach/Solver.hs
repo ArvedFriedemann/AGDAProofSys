@@ -12,7 +12,7 @@ import Control.Unification
 import Control.Monad.Trans
 
 bounds = ["=","->","^","v","bot",":","::","[]","=>","true","false",
-          "choose", "recurseProofs", "check",
+          "choose", "recurseProofs", "check","concat",
           "c0","c1","c2","c3","c4","c5","c6","c7","c8","c9",
           "t0","t1","t2","t3","t4","t5","t6","t7","t8","t9",
           "cA","cB","cC","cD","cE","cF","cG","cH","cI","cJ"]
@@ -25,10 +25,15 @@ stdTestUnivBounds b = stdTest' True (bounds ++ b)
 --TODO: refreshing of types
 checkkb = [
   --"X = X",
+  "(choose mergeop X X)",
   "(choose mergeop X (XS mergeop X))",
   "(choose mergeop X XS) -> (choose mergeop X (XS mergeop Y))",
+  "(concat (id mergeop) id Y Y)",
+  "(concat (id mergeop) XS Y Z) -> (concat (id mergeop) (XS mergeop X) Y (Z mergeop X))",
 
   "(recurseProofs prems (x : T) init init)",
+  "(check (p : (prems => (newprf : P)) )) -> " ++
+  "(recurseProofs prems (x : P) init (init newprf))",
   "(recurseProofs prems PS init prf) -> " ++
   "(check (p : (prems => (newprf : P)) )) -> " ++ --TODO: if this recurses, some with clause is needed!
   "(recurseProofs prems (PS => (oldp : P)) init (prf newprf))",
@@ -41,11 +46,17 @@ checkkb = [
   "(choose => (ak : (P' => (h1 : G)) ) P ) -> " ++
   "(recurseProofs P P' ak prf) -> "++
   "(check (p : (P => (prf : G)) ))",
-  "(check (p : (P => prems => (prf : G))) ) -> "++
+  --just choose a fact. No recursion needed.
+  "(choose => (ak : G) P ) -> " ++
+  "(check (p : (P => (ak : G)) ))",
+  --have the premises of the to be proven implication be actual premises.
+  "(concat ((h0 : T) =>) prems P P') -> "++
+  "(check (p : (P' => (prf : G))) ) -> "++
   "(check (p : (P => (prf : (prems => G)))) )"--This is new
   ]
-checkgoal0 = ["check (c0 : ((A : T) => (c1 : ((h1 : T) => (c3 : A))) => (prf : A)) )"]
-checkgoal1 = ["check (c0 : ((t2 : T) => (c4 : ((h1 : T) => (c3 : t1) => (c5 : t2) )) => (c1 : ((h1 : T) => (c6 : t1))) => (prf : t2)) )"]
+checkgoal0 = ["check (c0 : ((c3 : cA) => (prf : cA)) )"]
+checkgoal1 = ["check (c0 : ((c4 : ((c3 : cA) => (c5 : cB)) ) => (c1 : cA) => (prf : cB) ) )"]
+
 
 implgoal0 = ["check (c2 : ((t1 : T) => (c3 : ((t2 : T) => (c5 : cA) => (c6 : cB))) => (c0 : ((t0 : T) => (c1 : cA) => (prf : cB))) ))"]
 
