@@ -28,8 +28,9 @@ checkkb = [
   "(choose mergeop X X)",
   "(choose mergeop X (XS mergeop X))",
   "(choose mergeop X XS) -> (choose mergeop X (XS mergeop Y))",
-  "(concat (id mergeop) id Y Y)",
-  "(concat (id mergeop) XS Y Z) -> (concat (id mergeop) (XS mergeop X) Y (Z mergeop X))",
+  "(concat (id mergeop) Y id Y)",
+  "(concat (id mergeop) Y X (Y mergeop X))",
+  "(concat (id mergeop) Y XS Z) -> (concat (id mergeop) Y (XS mergeop X) (Z mergeop X))",
 
   "(recurseProofs prems (x : T) init init)",
   "(check (p : (prems => (newprf : P)) )) -> " ++
@@ -50,15 +51,15 @@ checkkb = [
   "(choose => (ak : G) P ) -> " ++
   "(check (p : (P => (ak : G)) ))",
   --have the premises of the to be proven implication be actual premises.
-  "(concat ((h0 : T) =>) prems P P') -> "++
-  "(check (p : (P' => (prf : G))) ) -> "++
+  "(concat ((h1 : T) =>) P prems P') -> "++
+  "(check (p : (P' => G)) ) -> "++
   "(check (p : (P => (prf : (prems => G)))) )"--This is new
   ]
 checkgoal0 = ["check (c0 : ((c3 : cA) => (prf : cA)) )"]
 checkgoal1 = ["check (c0 : ((c4 : ((c3 : cA) => (c5 : cB)) ) => (c1 : cA) => (prf : cB) ) )"]
 
 
-implgoal0 = ["check (c2 : ((t1 : T) => (c3 : ((t2 : T) => (c5 : cA) => (c6 : cB))) => (c0 : ((t0 : T) => (c1 : cA) => (prf : cB))) ))"]
+implgoal0 = ["check (c2 : ((c3 : ((c5 : cA) => (c6 : cB)) ) => (c0 : ((c1 : cA) => (prf : cB))) ))"]
 
 
 
