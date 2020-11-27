@@ -61,7 +61,22 @@ checkgoal1 = ["check (c0 : ((c4 : ((c3 : cA) => (c5 : cB)) ) => (c1 : cA) => (pr
 
 implgoal0 = ["check (c2 : ((c3 : ((c5 : cA) => (c6 : cB)) ) => (c0 : ((c1 : cA) => (prf : cB))) ))"]
 
+--TODO: This needs way better ite structure to work.
+refreshbounds = ["refresh", "val", "appl", "/", "replace"]
+refreshkb = [
+  "T",
+  "(refresh (val x) (val x))",
+  "(refresh E1 E1') -> (refresh E2 E2') -> (refresh (E1 appl E2) (E1' appl E2'))",
+  "(replace x y E E') -> (refresh E' E'') -> (refresh (/ x E) E'')",
 
+  "(replace x y (val x) (val y))",--again, ite needed
+  "T -> ((x = k) -> ()) -> (replace x y (val k) (val k))",
+  "(replace x y E1 E1') -> (replace x y E2 E2') -> (replace x y (E1 appl E2) (E1' appl E2'))",
+  "(replace x y (/ x E) E)", --TODO: this would be better with ite
+  "T -> ((x = k) -> ()) -> (replace x y E E') -> (replace x y (/ k E) E')"
+  ]
+
+refreshgoal0 = ["refresh (/ c1 (/ c2 (val c1) appl (/ c3 (val c2)))) Z"]
 
 {-
 A split can be performed on things with rules like
