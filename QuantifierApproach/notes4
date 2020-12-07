@@ -1,0 +1,59 @@
+No Title
+
+
+In this paper the merge of logic programming and proof theory will be discussed in order to create optimal proof systems. The computational basis will be an algorithm using unification, as is often used in logical languages. The algorithm needs a specification of its own implementation, so in this paper it will be described in its own formalism already. The problem that will be solved will subsume the problem of proof search for dependently typed programming languages, as it gives a nice and readable formalism.
+
+Proof search for dependently typed programs looks as follows. Let a type be represented by a term. Each type A has associated to it its proof, encoded as a term (a : A). There is a function type -> that can create a new type from two types A and B, like (f : (a : A) -> (b : B)). This reads as "forall a proving A, b proves B". There is the simple typing rule that says if there is an (a : A) and a function (f : (a' : A) -> (b : B)), that (f a : B), meaning that a proof of an implication is a function transforming proofs of A into proofs of B. Therefore the proof search problem for dependently typed programs can be reduced to saying that given an implication (p : (a1 : A1) -> ... -> (an : An) -> (q : Q)), the goal is to find a term q that is made up of the terms p,a1,...,an that proves Q (splits and termination checking will be covered later). Expressed as a logical program, this looks like
+
+
+check (_ : T).
+--TODO: variable refreshing
+(P = (a1 : A1) -> ... -> (an : An) -> (ak a1' ... an' : Q)) =>
+(choose
+  (ak : (ak1 : Ak1) -> ... -> (akn : Akn) -> (q' : Q))
+  from
+  [(p : P),(a1 : A1),...,(an : An)]) =>
+check (P -> (p : P) -> (ai' : Aki)) forall i =>
+  (check (p : P)).
+
+This code essentially chooses a function that's result type unifies with the goal type, and then creates the proofs of its arguments. It can be evaluated by logical languages. The aim is now to use this formulation and an existing search engine to synthesize a better proof strategy. This strategy will later be directly used to speed up the search while it is still running.
+
+In order for this to work, there needs to be a specification of the inference algorithm used. This will come in the form of a predicate infer/2 that describes two adjacent states of computation. It should have some level of determinism, but does not need to fully have it. It can be used for computation using infer_rec like
+
+(infer_rec X X 1).
+(infer X Y) => (infer_rec Y Z n) => (infer_rec X Z (suc n)).
+
+This also gives the number of state changes during the inference process for complexity analysis. The state itself will be encoded as a conjunction of parallel, quoted goals. The basics of using proof theory for optimal solving strategies can now be clarified by the following example.
+Let (p : P) be some goal. Consider p1 and p2 two possible proofs for P. The proof that should now be taken is the one that propagates the fastest. So the following goals are added:
+
+(curr_state S),
+((p1 : P) ^ S = X1), (infer_rec X1 Y1 n1),
+((p2 : P) ^ S = X2), (infer_rec X2 Y2 n2),
+(n1 < n2 -> p1 = p),
+(n2 < n1 -> p2 = p)
+
+So, if from the current state S of the system, branching for p1 is faster than branching for p2, then p1 should be the proof that is taken.
+Of course, just putting these rules does not directly make the system faster. In fact, for common deduction systems that evaluate all goal facts without communicating results, this will always be slower because both paths will be evaluated. However, if the KB changes and some of these goals can be evaluated quicker than doing the proof, there is a speed benefit. Furthermore, if the inference algorithm is allowed to occasionally ignore testing both possibilities, it can even still work despite some runtimes not being deducible. These are two problems with one solution each.
+
+The first solution is to modify the KB during the search. This is a generalisation of the clause learning used in SAT and SMT solvers. First, a clause can be added to the KB if it does not shrink the solution space. This can be formulated for a clause C by proving the statement
+
+(infer_rec X Z _) -> (infer_rec (X ^ C) Z' _) -> (Z ~= Z')
+
+Where ~= is some equality metric, e.g. that the same facts can be deduced.
+Just adding all possible clauses will be infeasable, therefore a second idea needs to be implemented: A clause C can be added if it is beneficial. A clause can be added or removed if it improves the current search speed. So, it needs to hold that
+
+(infer_rec X Z n1) -> (infer_rec (X ^ C) Z' n2) -> (n2 < n1)
+(infer_rec (X ^ C) Z n1) -> (infer_rec X Z' n2) -> (n2 < n1)
+
+for a clause to be added or removed.
+Still though, if all possible clauses for which this criterion holds would need to be added, searching for them could slow the process again. For this, a search strategy that can occasionally ignore possibilities needs to be added.
+
+
+
+
+
+
+
+
+
+.
