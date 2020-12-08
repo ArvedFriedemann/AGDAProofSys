@@ -49,7 +49,28 @@ for a clause to be added or removed.
 Still though, if all possible clauses for which this criterion holds would need to be added, searching for them could slow the process again. For this, a search strategy that can occasionally ignore possibilities needs to be added.
 
 
+To account for all these specifications, a universal goal needs to be used to create a solving algorithm. Problem with this is the notion of what is considered "fast". Here, a formalisation is used where the possible solutions should be given as a stream, in the order that they can be found the fastest. What is meant by 'can be found the fastest' is: If there was complexity information available on which solution could be found faster, it was used in the search process for prioritisation.
 
+
+
+In a fully deterministic machine model, all of the above would be subsumed by correctness of the algorithm, ensuring it optimizes for speed. To fit more with exiting methods for logical programming though, standard inference methods will be used. This means that always all clauses in the KB are consulted (a more deterministic and local machine could choose to ignore some), meaning that reducing the computational effort per step can only be achieved by reducing the number of clauses. Therefore, the KB is actually changed in each deduction step. This process can be described as follows.
+
+Let S be some initial search state. It is made up of the conjecture (p : G), where G = (a1 : A1) -> ... -> (an : An) -> (q : Q), where we call the set {(p : G), (a1 : A1),...,(an : An)} the knowledge base (KB), Q the goal and q the proof or path to Q. When we let the quoted S propagate, we get a (multi) goal (q1 : Q1) ^ ... ^ (qn : Qn), that can be seen as a set of goals each with their own KB. All these goals share each other in their KBs, the termination checker ensures the proof still stays valid. This propagated (quoted) search state is called S'.
+
+Each computational state can derive knowledge from its own representation. For this, there can be a KB of meta rules that derives this information that we will call META. After every propagation, the additional goal (META => (quote S') => S') is added. This can assign variables of S' and trigger new propagations. There are two problems with this approach: First, it can only add knowledge, but not remove any. It can only lead to new assignments, not new KBs. Second, the META knowledge is previously unknown.
+
+To solve the second problem, the META KB will be filled with rules that look at the entire system (including the META propagation itself). When proving that a certain assignment has to be made (e.g. through simulating the system), this places the assignment.
+
+To solve the first problem, there will be an extra structure. After each propagation, the META rules can deduce the next state that is being propagated. As the META-rules invoke propagation themselves, this might not give too many meaningful results. Therefore it is essential, that the META rules can stop propagations from happening. It can stop all non-atomic propagations and deduce the next search state. Which propagations can be stopped needs to be checked when simulating the system.
+
+We assume that in a quoted term, all unassigned variables are exchanged with a variable tag and a constant that is the variables id. There is a predicate unify/4 that takes two terms, creates the unified term, and gives a list of additional assignment changes (so they could be applied to other terms if necessary).
+There is a predicate infer_state/2 that does the quoted state transition. Here it is important that the next state contains all splits, so it is a mixture of conjunctions and disjunctions. Deriving bot from a conjunction makes the conjunction bot, deriving bot for all branches in a disjunction does as well, and knowing only one branch is left makes that branch propagate further.
+--TODO: Maybe just have a nondeterministic predicate, and some kind of "all" call to it? Then, the next one would only create the clauses needed...maybe on off variables for clauses, so no super meta smth rules are needed
+
+
+
+
+Last but not least, when nothing propagates, some universal search algorithm needs to be employed. This should be just some random search. So every time nothing propagates, the next step is picked at random. This is admissible because if the system could deduce the next step, it would have done so using propagation. Therefore, using random search now is admissible. If memory is not an issue, random search is just continued with a backtracking mechanism. If some memory barrier is hit then the search is done again and again until it succeeds.
 
 
 
