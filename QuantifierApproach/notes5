@@ -1,0 +1,21 @@
+Concrete approach to optimal proof systems
+
+
+When using a unification based logical proof system, the system always produces proofs that can be encoded using the formalism of type theory. When this proof is constrained to uphold some complexity measures, it can even be pushed to be synthesizable within reasonable complexity bounds.
+
+The general idea is the following. Let (p : P) be a statement to prove. There is now a second goal (k : Fast p) that, depending on p, proofs that p is a quickly produced proof (e.g. no unnecessary recursion, nothing tried out that would have been nonsense etc.). This needs a slight extension to classical type theory as here, not only the function as an object is important but also its implementation. This issue is easily fixable when encoding the whole problem in a logical language.
+
+The focus here however will be on the actual criteria for what makes a proof fast. The idea is simple: A proof was done quick if the underlying proof algorithm did not do anything "stupid". This means that if the algorithm "knew" about a proof that a certain step is necessary, the step was made, forbidden steps are ruled out and attempts were done safely. This means the algorithm runs accompanied with a knowledge base (KB) of statements. Runtime of the algorithm will depend on that KB, its inference mechanism is fix though.
+
+From the KB, several possible steps can be deduced. A step is considered necessary if it has only one possibility. If there are several possible steps, and the right step cannot be inferred, it needs to be inferred which step is the best, or even better, next one. The next step is chosen as the fastest path. If that knowledge is not available, there need to be steps done towards deducing it. However, if a proof is created in the process that is needed somewhere else where the concrete proof does not matter, the proof is still available. In short, there are also rules on how the algorithm behaves under the absence of knowledge. In general, the abscence of knowledge means that a choice can only be made either at random or, if memory allows it, excessively. It just needs to be made sure that existing proofs are also consulted. 
+
+
+
+
+
+
+
+
+
+
+.

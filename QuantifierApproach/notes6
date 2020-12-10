@@ -1,0 +1,56 @@
+
+(check (_ : T)).
+
+(choose -> (ak : Pk -> (_ : Q)) (P -> (p : P -> (_ : Q) )) =>
+(check (aki : P -> (p : P -> Q) -> Pki) )i =>
+  (check (p : P -> (ak ak1 ... akm : Q)) ).
+
+{-
+--TODO: Research Statman Type Inhabitation (Book: Lambda Calculus with Types, Barendregt, Statman, Dekker)
+
+(check (p : P)), (terminates p), (no-redundancy p), (find-fast KB p)
+
+s : (A -> B -> C) -> (A -> B) -> A -> C
+s : (A -> B) -> A -> B
+
+
+solve p1 ... res1, ... , solve pn ... resn, first [p1,...,pn] = p
+
+f [] = ...
+f [a] = ...
+f [a,x] = ...
+f (x : xs) = ...
+
+f : (a : A) -> (ac : A -> C) -> C
+f a ac = f {!!} {!!}
+
+f : List A -> N
+f (x :: xs) = f xs
+-}
+
+(min p . KB |= (p : P) ) =>
+  (shortProof KB (p : P) )
+
+--this directly constrains the state change of the solver
+--needed when inferences can be skipped!
+(states_of KB (p : P) KBSEQ) =>
+(forall s s' in KBSEQ . nothing bad happens)
+  (smartProof KB (p : P) )
+
+--Formulate META rules as "if certain knowledge is/is not present in the current state"
+--Verify that algorithm works correct.
+--Rule can be added when correct under all circumstances (in this case if the knowledge is there or not).
+--Easy start: find rules for lack of knowledge that give some benefit when existing.
+
+
+
+
+
+
+
+
+
+
+
+
+.

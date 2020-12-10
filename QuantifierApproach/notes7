@@ -1,0 +1,37 @@
+--original formulation
+
+(P = (a1 : A1) -> ... -> (an : An) -> (ak ak1 ... akm : Q)) =>
+(choose -> (ak : Pk -> (_ : Q)) P) =>
+(checkAll Pk P [ak1,...,akm] ) =>
+  (check (p : P))
+
+--more common formulation (might need higher order shenanigans)
+(P = (p : (a1 : A1) -> ... -> (an : An) -> Q)) =>
+(Pr = (P -> (a1 : A1) -> ... -> (an : An))) =>
+(choose (ak : (_ : Ak1) -> ... -> (_ : Akm) -> Q) P) =>
+(checkAll (ki : Pr -> Aki) (prfi = _))i =>   --TODO: not quite right
+ (check P (p a1 ... an = ak pfr1 ... prfn) )
+
+
+
+
+--With refresh (where refresh/2 creates a term with fresh variables from a template)
+
+(freshenList [] [])
+(freshenList KS XS) -> (freshenList [K | KS] [(K : X) | XS])
+
+(constant X) -> (refresh X X)
+(member (K : X) CTX) -> (refresh' CTX (var K) X)
+(refresh' A A') -> (refresh' B B') -> (refresh' CTX (A B) (A' B'))
+
+(variables T V) -> (freshenList V CTX) -> (refresh' CTX T) -> (refresh T)
+
+(P = (a1 : A1) -> ... -> (an : An) -> (ak ak1 ... akm : Q)) =>
+(map -> refresh P P') =>
+(choose -> (ak : Pk -> (_ : Q)) P) =>
+(checkAll Pk P [ak1,...,akm] ) =>
+  (check (p : P))
+
+
+
+.
