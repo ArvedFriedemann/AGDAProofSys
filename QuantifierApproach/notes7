@@ -26,11 +26,21 @@
 
 (variables T V) -> (freshenList V CTX) -> (refresh' CTX T) -> (refresh T)
 
-(P = (a1 : A1) -> ... -> (an : An) -> (ak ak1 ... akm : Q)) =>
-(map -> refresh P P') =>
-(choose -> (ak : Pk -> (_ : Q)) P) =>
+(P = (p : P) -> (a1 : A1) -> ... -> (an : An) -> (ak ak1 ... akm : Q)) =>
+(refresh P P') =>
+(refresh Q Q') =>
+(choose -> (ak : Pk -> (_ : Q')) P') =>
 (checkAll Pk P [ak1,...,akm] ) =>
   (check (p : P))
+
+
+
+--termination checking
+
+
+
+
+
 
 
 
