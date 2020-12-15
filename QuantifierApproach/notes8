@@ -1,0 +1,54 @@
+No Title
+
+
+We assume a simple logical language based on unification. Given a knowledge base (KB) of rules and a query it finds a path from the query to the axioms, assigning variables along the way. A propagator network ensures that variable assignments are quickly and fairly propagated between all active search systems. However, it is assumed that the propagation is incomplete, so the search cannot entirely rely on it. In this paper however we show that using meta rules, not only can the search be guided by propagation, but that even an optimal search strategy can be synthesized.
+
+A solver can be modelled as a predicate. This predicate takes a query and a goal and produces a path that we will call proof. In fact, until now, this is exactly a type checker for dependent types as a logical predicate, so we will call this easier predicate "check".
+
+(choose (ak : P -> (_ : Q) ) [(a1 : A1),...,(an : An),(p : ...)]) ->
+(checkPrems P (ak ak1 ... akm)) ->
+  (check (p : (a1 : A1) -> ... -> (an : An) -> (ak ak1 ... akm : Q)) )
+
+Here, the types are the terms to be unified, and attached to them is the path that was taken for the unifications. The KB is just the set of premises. This is an important connection between type theory and logical search. Also, these proofs can now be constrained. Enough disjoined constraints can speed up the search significantly. In the following we will discuss which constraints on proofs make sense.
+
+The first constraint is for a proof to terminate. As the proof can use itself recursively to cut corners, having a termination checker is essential for the system to still work. The termination criterion is that when calling the recursion, at least one argument cannot be top-level in the premises (assuming all proofs to be finite).
+
+The second constraint could say that the proof needs to be "short", in the sense that it should not waste space by duplicating code (e.g. it should call the recursion as early as possible). Problem with this is that, in general, it might be faster giving a longer proof than making sure that our proof is in fact the shortest. So it should not be the shortest proof given, but the fastest findable one. There are a few issues with that formulation, but it makes clear that there needs to be a predicate that simulates the entire system, so that we know which state propagates to which one in how many steps. we will call this predicate "system", where (system S S') is a single propagating step of the system and (system_rec S S' n) is the n-fold recursive application of "system", leading up to a state that does not propagate further.
+
+This predicate allows for proofs about the system itself. In fact, it can be used to further propagate knowledge that was derived from the state of the search and not the facts from the input. An example application would be to state that when several branches are possible, the fastest one will be chosen. This comes from adding the goal
+
+(curr_state S) ->
+(system_rec (P1 ^ S) S1 n1) ->
+(system_rec (P2 ^ S) S2 n2) ->
+(n1 < n2 -> S1 = S') ->
+(n2 < n1 -> S2 = S') ->
+(next_state S')
+
+This will force the system to branch on the fact that causes the lowest runtime of the proof. All that needs to be done is that after every propagation (or, during every step of the propagation for reasons discussed later), The next state is added as a goal and the current state is added as a fact.
+
+Of course, such a plain constraint would cause the slag that was mentioned above. If searching for the verification that the proof is the smallest is slower than choosing a (possibly random) alternative, the alternative should be taken. Therefore, these meta rules need to be defined as a reactive program. If knowledge is present that speeds up the search it is used, otherwise the next action is chosen at random.
+
+Which knowledge is present is decided by the KB. A fact that is not contained is not propagated. Knowledge about which branch takes how long can be contained as META rules and is consulted when present. This also means that when deducing the next step, the KB of the goals can change. Of course this can be a valid move to speed up the search, but the correctness of the system needs to stay.
+
+Therefore, we need another paradigm, that is generally useful for logical programming. If a proof exists, that an action does nothing wrong it can be taken. If a proof exists, that an action is harmful, it is discarded. And if neither is the case, the system needs to branch and operate both branches in parallel. An example of this paradigm would be termination checking for proofs. If a proof is known to terminate, it can be applied without the need for scheduling. If a proof is known not to terminate its branch can be cancelled and if neither is known, the branch has to be operated with a scheduler in case it doesn't terminate.
+
+Translated to our setting this means that the propagation algorithm already has to check which proofs are available and which are not. If the knowledge for the state change contains that the derivation will not cause faulty behaviour it is just memory efficiently applied. Faulty branches are removed and if there is no proof available for any of those, the system branches fairly in all possible directions (possible doing a random search to save memory).
+
+--TODO: the concrete formula for this
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.
