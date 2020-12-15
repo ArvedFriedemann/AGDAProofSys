@@ -43,7 +43,7 @@ interactiveProofPreread solvekb goals = do {
 
 interactiveProof' :: KB -> [(KB,OpenTerm)] -> IntBindMonQuanT IO ()
 interactiveProof' solvekb goals = return goals >>=
-                          propagateIteratingDepth >>=
+                          --propagateIteratingDepth >>=
                           --propagateProof >>=
                           --propagateProof' solvekb >>=
                           interactiveProof'' solvekb
